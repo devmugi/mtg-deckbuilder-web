@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeckBuilder Demo - MTG Commander</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 32 32" fill="currentColor">
+          <!-- Shield-like MTG icon paths -->
+          <path d="M16 2L4 8v8c0 7.5 5.1 14.5 12 16 6.9-1.5 12-8.5 12-16V8L16 2zm0 4l8 4v6c0 5.5-3.4 10.5-8 12-4.6-1.5-8-6.5-8-12v-6l8-4z"/>
+          <path d="M16 10l-4 2v4c0 2.8 1.7 5.3 4 6 2.3-.7 4-3.2 4-6v-4l-4-2z"/>
+        </svg>
+        <span>DeckBuilder</span>
+      </div>
+
+      <div class="search-container">
+        <input type="text" class="input" id="search-input" placeholder="Search for cards..." autocomplete="off">
+        <div class="dropdown hidden" id="search-dropdown"></div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Left Panel -->
+      <aside class="left-panel">
+        <div class="card-preview" id="card-preview">
+          <div class="card-preview-placeholder">Hover over a card to preview</div>
+        </div>
+      </aside>
+
+      <!-- Main Panel -->
+      <section class="main-panel">
+        <div class="main-panel-header">
+          <h1 class="main-panel-title">Deck</h1>
+          <div class="main-panel-actions">
+            <button class="btn btn-primary btn-sm" id="clear-deck-btn">Clear</button>
+          </div>
+        </div>
+
+        <div class="deck-list" id="deck-list">
+          <div class="deck-empty" id="deck-empty">
+            <svg class="deck-empty-icon" viewBox="0 0 64 64" fill="currentColor">
+              <rect x="8" y="8" width="48" height="48" rx="4" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+              <path d="M32 24v16M24 32h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p>No cards in deck</p>
+            <p style="font-size: var(--font-size-sm);">Search and add cards to get started</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Bar -->
+    <footer class="bottombar">
+      <div class="stat">
+        <span class="stat-label">Cards:</span>
+        <span class="stat-value" id="stat-cards">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Unique:</span>
+        <span class="stat-value" id="stat-unique">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Total:</span>
+        <span class="stat-value stat-value-accent" id="stat-price">$0.00</span>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
