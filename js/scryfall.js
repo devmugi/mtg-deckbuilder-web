@@ -106,6 +106,49 @@ function normalizeCard(scryfallCard) {
 }
 
 /**
+ * Fetch multiple cards by name using collection endpoint
+ * @param {string[]} names - Array of card names
+ * @returns {Promise<Object[]>} - Array of normalized cards
+ */
+export async function fetchCardsBatch(names) {
+  if (!names || names.length === 0) {
+    return [];
+  }
+
+  // Build identifiers for collection endpoint
+  const identifiers = names.map(name => ({ name }));
+
+  try {
+    // Collection endpoint allows up to 75 cards per request
+    const response = await fetch(`${SCRYFALL_API}/cards/collection`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ identifiers }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Scryfall API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Normalize and cache each card
+    const cards = (data.data || []).map(card => {
+      const normalized = normalizeCard(card);
+      cardCache.set(card.name.toLowerCase(), normalized);
+      return normalized;
+    });
+
+    return cards;
+  } catch (error) {
+    console.error('Batch fetch error:', error);
+    return [];
+  }
+}
+
+/**
  * Get cached card if available
  */
 export function getCachedCard(name) {
