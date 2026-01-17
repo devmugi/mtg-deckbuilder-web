@@ -20,6 +20,9 @@
         </svg>
         <span>DeckBuilder</span>
       </div>
+      <select class="deck-selector" id="deck-selector">
+        <option value="">Select a deck...</option>
+      </select>
 
       <div class="search-container">
         <input type="text" class="input" id="search-input" placeholder="Search for cards..." autocomplete="off">
@@ -40,6 +43,9 @@
       <section class="main-panel">
         <div class="main-panel-header">
           <h1 class="main-panel-title">Deck</h1>
+          <span class="loading-indicator hidden" id="loading-indicator">
+            Loading... <span id="loading-progress">0/100</span>
+          </span>
           <div class="main-panel-actions">
             <button class="btn btn-primary btn-sm" id="clear-deck-btn">Clear</button>
           </div>
