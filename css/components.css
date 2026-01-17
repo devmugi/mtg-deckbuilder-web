@@ -229,3 +229,34 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ============================================
+   DECK SELECTOR
+   ============================================ */
+
+.deck-selector {
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background: var(--bg-inset);
+  border: 2px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+  min-width: 200px;
+}
+
+.deck-selector:hover {
+  border-color: var(--border-strong);
+}
+
+.deck-selector:focus {
+  border-color: var(--accent);
+}
+
+.deck-selector option {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
