@@ -5,7 +5,9 @@
 // Deck state
 const state = {
   cards: new Map(), // cardId -> { card, quantity }
-  listeners: new Set()
+  listeners: new Set(),
+  modified: false,
+  currentPrecon: null
 };
 
 /**
@@ -14,6 +16,20 @@ const state = {
 export function subscribe(callback) {
   state.listeners.add(callback);
   return () => state.listeners.delete(callback);
+}
+
+/**
+ * Check if deck has been modified
+ */
+export function isModified() {
+  return state.modified;
+}
+
+/**
+ * Get current precon ID
+ */
+export function getCurrentPrecon() {
+  return state.currentPrecon;
 }
 
 /**
@@ -36,6 +52,7 @@ export function addCard(card) {
     state.cards.set(card.id, { card, quantity: 1 });
   }
 
+  state.modified = true;
   notifyListeners();
 }
 
@@ -53,6 +70,7 @@ export function removeCard(cardId) {
     state.cards.delete(cardId);
   }
 
+  state.modified = true;
   notifyListeners();
 }
 
@@ -78,6 +96,29 @@ export function setQuantity(cardId, quantity) {
  */
 export function deleteCard(cardId) {
   state.cards.delete(cardId);
+  state.modified = true;
+  notifyListeners();
+}
+
+/**
+ * Set deck contents (for loading precons)
+ * @param {Object[]} cards - Array of card objects
+ * @param {string|null} preconId - Precon ID or null
+ */
+export function setDeck(cards, preconId = null) {
+  state.cards.clear();
+
+  cards.forEach(card => {
+    const existing = state.cards.get(card.id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      state.cards.set(card.id, { card, quantity: 1 });
+    }
+  });
+
+  state.modified = false;
+  state.currentPrecon = preconId;
   notifyListeners();
 }
 
@@ -86,6 +127,8 @@ export function deleteCard(cardId) {
  */
 export function clearDeck() {
   state.cards.clear();
+  state.modified = false;
+  state.currentPrecon = null;
   notifyListeners();
 }
 
