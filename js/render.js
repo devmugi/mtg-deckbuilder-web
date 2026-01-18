@@ -172,3 +172,87 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+/**
+ * Render mana curve bar chart
+ * @param {Array} curve - Array of 8 counts for CMC 0-7+
+ */
+export function renderManaCurve(curve) {
+  const container = document.getElementById('mana-curve');
+  if (!container) return;
+
+  const max = Math.max(...curve, 1); // Avoid division by zero
+
+  const bars = curve.map((count, i) => {
+    const height = (count / max) * 100;
+    const label = i === 7 ? '7+' : String(i);
+
+    return `
+      <div class="mana-bar-container">
+        <div class="mana-bar">
+          <div class="mana-bar-fill" style="height: ${height}%" title="${count} cards at CMC ${label}"></div>
+        </div>
+        <div class="mana-bar-label">${label}</div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = bars;
+}
+
+/**
+ * Render color distribution pie chart
+ * @param {Object} colors - Color counts { W, U, B, R, G, C }
+ */
+export function renderColorPie(colors) {
+  const pie = document.getElementById('color-pie');
+  const legend = document.getElementById('color-legend');
+  if (!pie || !legend) return;
+
+  const colorOrder = ['W', 'U', 'B', 'R', 'G', 'C'];
+  const colorVars = {
+    W: 'var(--mtg-white)',
+    U: 'var(--mtg-blue)',
+    B: 'var(--mtg-black)',
+    R: 'var(--mtg-red)',
+    G: 'var(--mtg-green)',
+    C: 'var(--mtg-colorless)'
+  };
+
+  const total = Object.values(colors).reduce((sum, count) => sum + count, 0);
+
+  if (total === 0) {
+    // Empty state
+    pie.style.background = 'var(--bg-inset)';
+    legend.innerHTML = '';
+    return;
+  }
+
+  // Build conic gradient
+  const segments = [];
+  let currentAngle = 0;
+
+  colorOrder.forEach(color => {
+    const count = colors[color];
+    if (count > 0) {
+      const angle = (count / total) * 360;
+      segments.push(`${colorVars[color]} ${currentAngle}deg ${currentAngle + angle}deg`);
+      currentAngle += angle;
+    }
+  });
+
+  pie.style.background = `conic-gradient(${segments.join(', ')})`;
+
+  // Build legend
+  const legendItems = colorOrder
+    .filter(color => colors[color] > 0)
+    .map(color => `
+      <div class="color-legend-item">
+        <div class="color-swatch color-swatch--${color}"></div>
+        <span>${color}: ${colors[color]}</span>
+      </div>
+    `)
+    .join('');
+
+  legend.innerHTML = legendItems;
+}
