@@ -550,26 +550,45 @@ body {
   }
 
   .topbar-actions {
-    gap: var(--space-sm);
+    gap: var(--space-xs);
+    flex-shrink: 0;
   }
 
   .topbar-actions .btn {
     display: none;
   }
 
+  .topbar-actions .social-link {
+    width: 20px;
+    height: 20px;
+  }
+
+  .topbar-actions .social-link svg {
+    width: 16px;
+    height: 16px;
+  }
+
   .deck-selector {
     flex: 1;
     min-width: 0;
+    max-width: 200px;
   }
 
   .deck-selector-button {
     max-width: 100%;
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-sm);
   }
 
   .deck-selector-button .deck-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 120px;
+  }
+
+  .deck-selector-button .deck-count {
+    font-size: 10px;
   }
 
   /* Mobile Bottom Tabs */
