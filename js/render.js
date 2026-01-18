@@ -135,7 +135,7 @@ export function renderDeck(cards, zone, handlers) {
     // Quantity minus
     row.querySelector('.qty-minus').addEventListener('click', (e) => {
       e.stopPropagation();
-      handlers.onRemove(cardId);
+      handlers.onRemove(cardId, zone);
     });
 
     // Quantity plus
@@ -149,7 +149,7 @@ export function renderDeck(cards, zone, handlers) {
     // Delete card
     row.querySelector('.delete-card').addEventListener('click', (e) => {
       e.stopPropagation();
-      handlers.onRemove(cardId, true); // true = delete all
+      handlers.onRemove(cardId, zone, true); // true = delete all
     });
 
     // Move buttons
