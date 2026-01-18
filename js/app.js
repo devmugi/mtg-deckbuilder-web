@@ -36,6 +36,71 @@ let selectedDeckId = null; // Currently selected deck
 let currentLoadId = 0; // Track current load operation to cancel previous
 
 /**
+ * Mobile tab navigation state
+ */
+let currentMobileTab = 'deck';
+
+/**
+ * Setup mobile tab navigation
+ */
+function setupMobileTabs() {
+  const tabsContainer = document.getElementById('mobile-tabs');
+  if (!tabsContainer) return;
+
+  tabsContainer.addEventListener('click', (e) => {
+    const tab = e.target.closest('.mobile-tab');
+    if (!tab) return;
+
+    const tabName = tab.dataset.tab;
+    if (tabName === currentMobileTab) return;
+
+    // Update active tab button
+    tabsContainer.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Show/hide content based on tab
+    currentMobileTab = tabName;
+    updateMobileTabContent();
+  });
+}
+
+/**
+ * Update visible content based on current mobile tab
+ */
+function updateMobileTabContent() {
+  const mainPanel = document.querySelector('.main-panel');
+  const leftPanel = document.querySelector('.left-panel');
+  const filterBar = document.getElementById('filter-bar');
+  const searchContainer = document.querySelector('.search-container');
+
+  // Reset visibility
+  if (mainPanel) mainPanel.style.display = '';
+  if (leftPanel) leftPanel.style.display = '';
+  if (filterBar) filterBar.style.display = '';
+  if (searchContainer) searchContainer.style.display = '';
+
+  // Only apply on mobile
+  if (window.innerWidth > 768) return;
+
+  switch (currentMobileTab) {
+    case 'deck':
+      if (leftPanel) leftPanel.style.display = 'none';
+      if (searchContainer) searchContainer.style.display = 'none';
+      break;
+    case 'search':
+      if (leftPanel) leftPanel.style.display = 'none';
+      if (filterBar) filterBar.style.display = 'none';
+      if (searchContainer) searchContainer.style.display = 'block';
+      break;
+    case 'stats':
+      if (mainPanel) mainPanel.style.display = 'none';
+      if (leftPanel) leftPanel.style.display = 'flex';
+      if (searchContainer) searchContainer.style.display = 'none';
+      break;
+  }
+}
+
+/**
  * Handle card preview updates
  * Shows hovered card, or commander if no card hovered
  */
@@ -1062,6 +1127,10 @@ function init() {
   renderCurrentZone(initialDeck);
   updateStats(initialDeck.deck);
   updateBottomBar(initialDeck.stats);
+
+  // Setup mobile tab navigation
+  setupMobileTabs();
+  window.addEventListener('resize', updateMobileTabContent);
 
   console.log('DeckBuilder initialized');
 }
