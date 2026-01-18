@@ -256,25 +256,31 @@ function getShortType(typeLine) {
 }
 
 /**
- * Render mana curve bar chart
+ * Render mana curve bar chart with mana icons, count and percent
  * @param {Array} curve - Array of 8 counts for CMC 0-7+
  */
 export function renderManaCurve(curve) {
   const container = document.getElementById('mana-curve');
   if (!container) return;
 
-  const max = Math.max(...curve, 1); // Avoid division by zero
+  const max = Math.max(...curve, 1);
+  const total = curve.reduce((sum, c) => sum + c, 0);
 
   const bars = curve.map((count, i) => {
     const height = (count / max) * 100;
-    const label = i === 7 ? '7+' : String(i);
+    const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+    const manaSymbol = i === 7 ? '7' : String(i);
 
     return `
       <div class="mana-bar-container">
         <div class="mana-bar">
-          <div class="mana-bar-fill" style="height: ${height}%" title="${count} cards at CMC ${label}"></div>
+          <div class="mana-bar-fill" style="height: ${height}%"></div>
         </div>
-        <div class="mana-bar-label">${label}</div>
+        <div class="mana-bar-stats">
+          <span class="mana-bar-count">${count}</span>
+          <span class="mana-bar-percent">${percent}%</span>
+        </div>
+        <img class="mana-bar-icon" src="https://svgs.scryfall.io/card-symbols/${manaSymbol}.svg" alt="${manaSymbol}">
       </div>
     `;
   }).join('');
@@ -283,60 +289,36 @@ export function renderManaCurve(curve) {
 }
 
 /**
- * Render color distribution pie chart
+ * Render color distribution as horizontal bar with mana icons
  * @param {Object} colors - Color counts { W, U, B, R, G, C }
  */
 export function renderColorPie(colors) {
-  const pie = document.getElementById('color-pie');
-  const legend = document.getElementById('color-legend');
-  if (!pie || !legend) return;
+  const container = document.getElementById('color-pie');
+  if (!container) return;
 
   const colorOrder = ['W', 'U', 'B', 'R', 'G', 'C'];
-  const colorVars = {
-    W: 'var(--mtg-white)',
-    U: 'var(--mtg-blue)',
-    B: 'var(--mtg-black)',
-    R: 'var(--mtg-red)',
-    G: 'var(--mtg-green)',
-    C: 'var(--mtg-colorless)'
-  };
-
   const total = Object.values(colors).reduce((sum, count) => sum + count, 0);
 
   if (total === 0) {
-    // Empty state
-    pie.style.background = 'var(--bg-inset)';
-    legend.innerHTML = '';
+    container.innerHTML = '<div class="color-bar-empty"></div>';
     return;
   }
 
-  // Build conic gradient
-  const segments = [];
-  let currentAngle = 0;
-
-  colorOrder.forEach(color => {
-    const count = colors[color];
-    if (count > 0) {
-      const angle = (count / total) * 360;
-      segments.push(`${colorVars[color]} ${currentAngle}deg ${currentAngle + angle}deg`);
-      currentAngle += angle;
-    }
-  });
-
-  pie.style.background = `conic-gradient(${segments.join(', ')})`;
-
-  // Build legend
-  const legendItems = colorOrder
+  // Build horizontal segments
+  const segments = colorOrder
     .filter(color => colors[color] > 0)
-    .map(color => `
-      <div class="color-legend-item">
-        <div class="color-swatch color-swatch--${color}"></div>
-        <span>${color}: ${colors[color]}</span>
-      </div>
-    `)
+    .map(color => {
+      const count = colors[color];
+      const percent = (count / total) * 100;
+      return `
+        <div class="color-bar-segment color-bar-segment--${color}" style="width: ${percent}%" title="${color}: ${count} (${Math.round(percent)}%)">
+          <img class="color-bar-icon" src="https://svgs.scryfall.io/card-symbols/${color}.svg" alt="${color}">
+        </div>
+      `;
+    })
     .join('');
 
-  legend.innerHTML = legendItems;
+  container.innerHTML = segments;
 }
 
 /**

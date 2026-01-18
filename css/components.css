@@ -325,6 +325,28 @@
   z-index: 200;
 }
 
+/* Import action in dropdown */
+.deck-selector-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border-bottom: 1px solid var(--border-default);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.deck-selector-action:hover {
+  background: var(--accent-subtle);
+}
+
+.deck-selector-action-icon {
+  width: 20px;
+  height: 20px;
+}
+
 /* Deck item in dropdown */
 .deck-selector-item {
   display: grid;
@@ -480,23 +502,23 @@
 .mana-curve {
   display: flex;
   gap: 4px;
-  height: 60px;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .mana-bar-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  align-items: center;
+  gap: 4px;
 }
 
 .mana-bar {
-  flex: 1;
+  width: 100%;
+  height: 50px;
   background: var(--bg-inset);
   border-radius: var(--radius-sm);
   position: relative;
-  min-height: 40px;
 }
 
 .mana-bar-fill {
@@ -509,53 +531,64 @@
   transition: height 0.2s ease;
 }
 
-.mana-bar-label {
-  text-align: center;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  margin-top: 4px;
+.mana-bar-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   line-height: 1;
 }
 
-/* Color Pie */
+.mana-bar-count {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mana-bar-percent {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.mana-bar-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Color Bar */
 .color-pie {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: var(--bg-inset);
-  margin: 0 auto;
-  transition: background 0.2s ease;
-}
-
-.color-legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-top: var(--space-sm);
+  height: 32px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-inset);
 }
 
-.color-legend-item {
+.color-bar-empty {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-inset);
+}
+
+.color-bar-segment {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  justify-content: center;
+  min-width: 32px;
+  transition: width 0.2s ease;
 }
 
-.color-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.color-bar-segment--W { background: #e9e5dc; }
+.color-bar-segment--U { background: #6b9bc3; }
+.color-bar-segment--B { background: #5d5a58; }
+.color-bar-segment--R { background: #db8664; }
+.color-bar-segment--G { background: #7bbd7a; }
+.color-bar-segment--C { background: #a8a49e; }
+
+.color-bar-icon {
+  width: 20px;
+  height: 20px;
 }
 
-.color-swatch--W { background: var(--mtg-white); }
-.color-swatch--U { background: var(--mtg-blue); }
-.color-swatch--B { background: var(--mtg-black); }
-.color-swatch--R { background: var(--mtg-red); }
-.color-swatch--G { background: var(--mtg-green); }
-.color-swatch--C { background: var(--mtg-colorless); }
 
 /* ==========================================================================
    ZONE TABS

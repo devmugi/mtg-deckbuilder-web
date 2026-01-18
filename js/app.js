@@ -31,6 +31,7 @@ let deckSelectorButton;
 let deckSelectorDropdown;
 let commanderCache = {}; // Cache commander card data
 let selectedDeckId = null; // Currently selected deck
+let currentLoadId = 0; // Track current load operation to cancel previous
 
 /**
  * Handle card preview updates
@@ -266,10 +267,21 @@ async function populateDeckSelector() {
  * Render deck selector dropdown items
  */
 function renderDeckSelectorItems(precons) {
-  const html = precons.map(deck => {
+  // Import action as first item
+  const importAction = `
+    <div class="deck-selector-action" id="deck-import-action">
+      <svg class="deck-selector-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <span>Import Deck</span>
+    </div>
+  `;
+
+  const deckItems = precons.map(deck => {
     const cached = commanderCache[deck.commander];
     const completionClass = getCompletionClass(deck.cardCount);
-    const isLoading = !cached;
 
     return `
       <div class="deck-selector-item" data-deck-id="${deck.id}">
@@ -293,9 +305,15 @@ function renderDeckSelectorItems(precons) {
     `;
   }).join('');
 
-  deckSelectorDropdown.innerHTML = html;
+  deckSelectorDropdown.innerHTML = importAction + deckItems;
 
-  // Add click handlers
+  // Add import click handler
+  document.getElementById('deck-import-action')?.addEventListener('click', () => {
+    closeDeckSelector();
+    showImportModal();
+  });
+
+  // Add deck click handlers
   deckSelectorDropdown.querySelectorAll('.deck-selector-item').forEach(item => {
     item.addEventListener('click', () => {
       const deckId = item.dataset.deckId;
@@ -414,30 +432,41 @@ async function loadPreconDeck(deckId) {
   const precon = getPreconById(deckId);
   if (!precon) return;
 
-  // Check if deck modified
-  if (isModified()) {
-    const confirmed = confirm(`Load "${precon.name}"? Current changes will be lost.`);
-    if (!confirmed) {
-      return;
-    }
-  }
+  // Cancel any previous load by incrementing the load ID
+  currentLoadId++;
+  const thisLoadId = currentLoadId;
+
+  // Clear deck and all zones immediately
+  clearAllZones();
+  setDeck([], null);
+  commanderCard = null;
+  renderPreview(null);
 
   // Start loading
   isLoading = true;
   loadingIndicator.classList.remove('hidden');
+  loadingProgress.textContent = `0/${precon.cards.length}`;
 
   const cardNames = precon.cards;
   const totalCards = cardNames.length;
   const batchSize = 10;
   const loadedCards = [];
 
-  // Clear deck first
-  setDeck([], null);
-
   // Load in batches
   for (let i = 0; i < totalCards; i += batchSize) {
+    // Check if this load was cancelled (new deck selected)
+    if (thisLoadId !== currentLoadId) {
+      return; // Abort this load
+    }
+
     const batch = cardNames.slice(i, i + batchSize);
     const cards = await fetchCardsBatch(batch);
+
+    // Check again after async operation
+    if (thisLoadId !== currentLoadId) {
+      return; // Abort this load
+    }
+
     loadedCards.push(...cards);
 
     // Update progress
@@ -446,6 +475,11 @@ async function loadPreconDeck(deckId) {
 
     // Update deck with all loaded cards so far
     setDeck(loadedCards, deckId);
+  }
+
+  // Final check before completing
+  if (thisLoadId !== currentLoadId) {
+    return;
   }
 
   // Done loading
