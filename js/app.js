@@ -17,6 +17,7 @@ import { fetchCardsBatch } from './scryfall.js';
  * Current preview card state
  */
 let currentPreviewCard = null;
+let commanderCard = null;
 let currentZone = 'deck';
 let filterState = {
   colors: ['W', 'U', 'B', 'R', 'G', 'C'],
@@ -30,10 +31,11 @@ let deckSelector;
 
 /**
  * Handle card preview updates
+ * Shows hovered card, or commander if no card hovered
  */
 function handlePreview(card) {
   currentPreviewCard = card;
-  renderPreview(card);
+  renderPreview(card || commanderCard);
 }
 
 /**
@@ -240,6 +242,15 @@ async function loadPreconDeck(deckId) {
   isLoading = false;
   loadingIndicator.classList.add('hidden');
   showToast(`${precon.name} loaded (${loadedCards.length} cards)`);
+
+  // Set commander (first card with "Legendary" in type, or first card)
+  const commander = loadedCards.find(c =>
+    c.typeLine && c.typeLine.includes('Legendary')
+  ) || loadedCards[0];
+  if (commander) {
+    commanderCard = commander;
+    renderPreview(commander);
+  }
 }
 
 /**
@@ -524,6 +535,10 @@ function init() {
   initImportExport();
   initFilters();
 
+  // Reset preview to commander when mouse leaves deck list
+  const deckList = document.getElementById('deck-list');
+  deckList?.addEventListener('mouseleave', () => handlePreview(null));
+
   // Subscribe to deck changes
   subscribe(handleDeckChange);
 
@@ -552,6 +567,7 @@ function init() {
   clearBtn?.addEventListener('click', () => {
     if (confirm('Clear all zones?')) {
       clearAllZones();
+      commanderCard = null;
       renderPreview(null);
       if (deckSelector) {
         deckSelector.value = '';
