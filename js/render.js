@@ -497,6 +497,15 @@ export function renderSplitView(data, handlers) {
     row.addEventListener('mouseenter', () => {
       handlers.onPreview?.(cardEntry.card);
     });
+
+    // Mobile menu button
+    const menuBtn = row.querySelector('.deck-card-menu-btn');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handlers.onMenuOpen?.(cardEntry.card, zone, menuBtn);
+      });
+    }
   });
 }
 
@@ -538,6 +547,7 @@ function renderSplitCard(card, quantity, zone) {
       <div class="deck-card-actions">
         <button class="btn btn-primary btn-sm delete-card" data-card-id="${card.id}" title="Remove">✕</button>
       </div>
+      <button class="deck-card-menu-btn" data-card-id="${card.id}" data-zone="${zone}" aria-label="Card actions">⋮</button>
     </div>
   `;
 }
