@@ -62,6 +62,8 @@
             Loading... <span id="loading-progress">0/100</span>
           </span>
           <div class="main-panel-actions">
+            <button class="btn btn-primary btn-sm" id="import-btn">Import</button>
+            <button class="btn btn-primary btn-sm" id="export-btn">Export</button>
             <button class="btn btn-primary btn-sm" id="clear-deck-btn">Clear</button>
           </div>
         </div>
@@ -99,6 +101,28 @@
       </div>
     </footer>
   </div>
+
+  <div class="modal hidden" id="import-modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Import Deck</h2>
+      <textarea class="modal-textarea" id="import-textarea"
+                placeholder="1 Sol Ring
+1 Command Tower
+1 Arcane Signet
+
+// Sideboard
+1 Swords to Plowshares
+
+// Maybeboard
+1 Phyrexian Arena"></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-secondary btn-sm" id="import-cancel">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="import-confirm">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
 
   <script type="module" src="js/app.js"></script>
 </body>
