@@ -1210,5 +1210,11 @@ export function getPreconById(id) {
  * Get all precon decks (for populating dropdown)
  */
 export function getAllPrecons() {
-  return PRECON_DECKS.map(({ id, name, colors }) => ({ id, name, colors }));
+  return PRECON_DECKS.map(({ id, name, commander, colors, cards }) => ({
+    id,
+    name,
+    commander,
+    colors,
+    cardCount: cards.length
+  }));
 }

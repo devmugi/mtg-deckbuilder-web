@@ -26,7 +26,11 @@ let filterState = {
 let isLoading = false;
 let loadingIndicator;
 let loadingProgress;
-let deckSelector;
+let deckSelectorContainer;
+let deckSelectorButton;
+let deckSelectorDropdown;
+let commanderCache = {}; // Cache commander card data
+let selectedDeckId = null; // Currently selected deck
 
 /**
  * Handle card preview updates
@@ -189,17 +193,218 @@ function updateStats(cards) {
 }
 
 /**
- * Populate deck selector dropdown
+ * Render mana cost as symbols for deck selector
  */
-function populateDeckSelector() {
+function renderManaIcons(manaCost) {
+  if (!manaCost) return '';
+  const symbols = manaCost.match(/\{[^}]+\}/g) || [];
+  return symbols.map(symbol => {
+    const code = symbol.slice(1, -1).replace('/', '');
+    return `<img class="mana-symbol" src="https://svgs.scryfall.io/card-symbols/${encodeURIComponent(code)}.svg" alt="${symbol}">`;
+  }).join('');
+}
+
+/**
+ * Get completion class based on card count
+ */
+function getCompletionClass(count) {
+  if (count >= 100) return 'deck-completion-complete';
+  if (count >= 50) return 'deck-completion-partial';
+  return 'deck-completion-incomplete';
+}
+
+/**
+ * Populate deck selector dropdown with rich items
+ * Uses Scryfall collection API for batch fetching
+ */
+async function populateDeckSelector() {
   const precons = getAllPrecons();
 
-  precons.forEach(deck => {
-    const option = document.createElement('option');
-    option.value = deck.id;
-    option.textContent = deck.name;
-    deckSelector.appendChild(option);
+  // Render placeholder items first
+  renderDeckSelectorItems(precons);
+
+  // Get unique commander names that aren't cached
+  const commanderNames = precons
+    .map(d => d.commander)
+    .filter(name => !commanderCache[name]);
+
+  if (commanderNames.length === 0) return;
+
+  // Batch fetch using Scryfall collection API
+  try {
+    const identifiers = commanderNames.map(name => ({ name }));
+    const response = await fetch('https://api.scryfall.com/cards/collection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifiers })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      // Cache all fetched commanders
+      for (const card of data.data) {
+        commanderCache[card.name] = {
+          name: card.name,
+          typeLine: card.type_line,
+          manaCost: card.mana_cost,
+          artCrop: card.image_uris?.art_crop || card.card_faces?.[0]?.image_uris?.art_crop
+        };
+      }
+      // Re-render with fetched data
+      renderDeckSelectorItems(precons);
+      // Update selected deck button if one is selected
+      if (selectedDeckId) {
+        updateSelectedDeckButton(selectedDeckId);
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to fetch commanders:', err);
+  }
+}
+
+/**
+ * Render deck selector dropdown items
+ */
+function renderDeckSelectorItems(precons) {
+  const html = precons.map(deck => {
+    const cached = commanderCache[deck.commander];
+    const completionClass = getCompletionClass(deck.cardCount);
+    const isLoading = !cached;
+
+    return `
+      <div class="deck-selector-item" data-deck-id="${deck.id}">
+        <div class="deck-selector-item-art-container">
+          ${cached?.artCrop
+            ? `<img class="deck-selector-item-art" src="${cached.artCrop}" alt="" loading="lazy">`
+            : `<div class="deck-selector-item-art-placeholder"></div>`
+          }
+        </div>
+        <div class="deck-selector-item-info">
+          <div class="deck-selector-item-name">${deck.name}</div>
+          <div class="deck-selector-item-type">${cached?.typeLine || 'Loading...'}</div>
+        </div>
+        <div class="deck-selector-item-meta">
+          <div class="deck-selector-item-mana">
+            ${cached?.manaCost ? renderManaIcons(cached.manaCost) : ''}
+          </div>
+          <span class="deck-completion ${completionClass}">${deck.cardCount}/100</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  deckSelectorDropdown.innerHTML = html;
+
+  // Add click handlers
+  deckSelectorDropdown.querySelectorAll('.deck-selector-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const deckId = item.dataset.deckId;
+      selectDeck(deckId);
+    });
   });
+}
+
+/**
+ * Update the selected deck button display
+ */
+function updateSelectedDeckButton(deckId) {
+  const precon = getPreconById(deckId);
+  if (!precon) return;
+
+  const cached = commanderCache[precon.commander];
+  const cardCount = precon.cards.length;
+  const completionClass = getCompletionClass(cardCount);
+
+  deckSelectorButton.innerHTML = `
+    <div class="deck-selector-selected">
+      ${cached?.artCrop
+        ? `<img class="deck-selector-selected-art" src="${cached.artCrop}" alt="">`
+        : `<div class="deck-selector-selected-art-placeholder"></div>`
+      }
+      <span class="deck-selector-selected-name">${precon.name}</span>
+    </div>
+    <span class="deck-completion ${completionClass}">${cardCount}/100</span>
+  `;
+}
+
+/**
+ * Select a deck and update the button
+ */
+function selectDeck(deckId) {
+  const precon = getPreconById(deckId);
+  if (!precon) return;
+
+  // Store selected deck ID
+  selectedDeckId = deckId;
+
+  // Close dropdown
+  closeDeckSelector();
+
+  // Update button with selected deck
+  updateSelectedDeckButton(deckId);
+
+  // Mark selected item
+  deckSelectorDropdown.querySelectorAll('.deck-selector-item').forEach(item => {
+    item.classList.toggle('selected', item.dataset.deckId === deckId);
+  });
+
+  // Load the deck
+  loadPreconDeck(deckId);
+}
+
+/**
+ * Toggle deck selector dropdown
+ */
+function toggleDeckSelector() {
+  const isOpen = deckSelectorContainer.classList.contains('open');
+  if (isOpen) {
+    closeDeckSelector();
+  } else {
+    openDeckSelector();
+  }
+}
+
+/**
+ * Open deck selector dropdown
+ */
+function openDeckSelector() {
+  deckSelectorContainer.classList.add('open');
+  deckSelectorDropdown.classList.remove('hidden');
+}
+
+/**
+ * Close deck selector dropdown
+ */
+function closeDeckSelector() {
+  deckSelectorContainer.classList.remove('open');
+  deckSelectorDropdown.classList.add('hidden');
+}
+
+/**
+ * Initialize deck selector
+ */
+function initDeckSelector() {
+  deckSelectorContainer = document.getElementById('deck-selector');
+  deckSelectorButton = document.getElementById('deck-selector-button');
+  deckSelectorDropdown = document.getElementById('deck-selector-dropdown');
+
+  if (!deckSelectorButton) return;
+
+  // Toggle dropdown on button click
+  deckSelectorButton.addEventListener('click', toggleDeckSelector);
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!deckSelectorContainer.contains(e.target)) {
+      closeDeckSelector();
+    }
+  });
+
+  // Populate dropdown
+  populateDeckSelector();
+
+  // Auto-select Najeela deck
+  setTimeout(() => selectDeck('najeela-warriors'), 100);
 }
 
 /**
@@ -213,8 +418,6 @@ async function loadPreconDeck(deckId) {
   if (isModified()) {
     const confirmed = confirm(`Load "${precon.name}"? Current changes will be lost.`);
     if (!confirmed) {
-      // Reset selector to current precon
-      deckSelector.value = getCurrentPrecon() || '';
       return;
     }
   }
@@ -550,13 +753,13 @@ function init() {
   // Get loading elements
   loadingIndicator = document.getElementById('loading-indicator');
   loadingProgress = document.getElementById('loading-progress');
-  deckSelector = document.getElementById('deck-selector');
 
   // Initialize modules
   initRender();
   initSearch(handlePreview);
   initImportExport();
   initFilters();
+  initDeckSelector();
 
   // Reset preview to commander when mouse leaves deck list
   const deckList = document.getElementById('deck-list');
@@ -570,20 +773,6 @@ function init() {
   renderCurrentZone(initialDeck);
   updateStats(initialDeck.deck);
   updateBottomBar(initialDeck.stats);
-
-  // Populate deck selector
-  if (deckSelector) {
-    populateDeckSelector();
-    deckSelector.addEventListener('change', (e) => {
-      if (e.target.value) {
-        loadPreconDeck(e.target.value);
-      }
-    });
-
-    // Auto-load Najeela deck by default
-    deckSelector.value = 'najeela-warriors';
-    loadPreconDeck('najeela-warriors');
-  }
 
   console.log('DeckBuilder initialized');
 }

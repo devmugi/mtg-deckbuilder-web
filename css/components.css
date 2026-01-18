@@ -231,10 +231,19 @@
 }
 
 /* ============================================
-   DECK SELECTOR
+   DECK SELECTOR (Rich Dropdown)
    ============================================ */
 
 .deck-selector {
+  position: relative;
+  min-width: 280px;
+}
+
+.deck-selector-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
   padding: var(--space-sm) var(--space-md);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -243,22 +252,199 @@
   border: 2px solid var(--border-default);
   border-radius: var(--radius-md);
   cursor: pointer;
-  outline: none;
   transition: all var(--transition-fast);
-  min-width: 200px;
+  text-align: left;
 }
 
-.deck-selector:hover {
+.deck-selector-button:hover {
   border-color: var(--border-strong);
 }
 
-.deck-selector:focus {
+.deck-selector-button:focus {
+  outline: none;
   border-color: var(--accent);
 }
 
-.deck-selector option {
+.deck-selector-button::after {
+  content: '▼';
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.deck-selector.open .deck-selector-button::after {
+  content: '▲';
+}
+
+.deck-selector-placeholder {
+  color: var(--text-muted);
+}
+
+/* Selected deck preview in button */
+.deck-selector-selected {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.deck-selector-selected-art {
+  width: 32px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.deck-selector-selected-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-selector-selected-completion {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* Dropdown menu */
+.deck-selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--space-xs);
   background: var(--bg-raised);
-  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-high);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+/* Deck item in dropdown */
+.deck-selector-item {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.deck-selector-item:last-child {
+  border-bottom: none;
+}
+
+.deck-selector-item:hover {
+  background: var(--accent-subtle);
+}
+
+.deck-selector-item.selected {
+  background: var(--accent-subtle);
+}
+
+.deck-selector-item-art-container {
+  width: 48px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.deck-selector-item-art {
+  width: 48px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+}
+
+.deck-selector-item-art-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-inset);
+  border-radius: var(--radius-sm);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.deck-selector-selected-art-placeholder {
+  width: 32px;
+  height: 24px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-sm);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+.deck-selector-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.deck-selector-item-name {
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-selector-item-type {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-selector-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.deck-selector-item-mana {
+  display: flex;
+  gap: 2px;
+}
+
+.deck-selector-item-mana .mana-symbol {
+  width: 14px;
+  height: 14px;
+}
+
+/* Completion indicator */
+.deck-completion {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.deck-completion-incomplete {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.deck-completion-partial {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+.deck-completion-complete {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
 }
 
 /* ==========================================================================

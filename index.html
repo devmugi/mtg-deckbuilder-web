@@ -21,9 +21,14 @@
         </svg>
         <span>DeckBuilder</span>
       </div>
-      <select class="deck-selector" id="deck-selector">
-        <option value="">Select a deck...</option>
-      </select>
+      <div class="deck-selector" id="deck-selector">
+        <button class="deck-selector-button" id="deck-selector-button">
+          <span class="deck-selector-placeholder">Select a deck...</span>
+        </button>
+        <div class="deck-selector-dropdown hidden" id="deck-selector-dropdown">
+          <!-- Populated by JS -->
+        </div>
+      </div>
 
       <div class="search-container">
         <input type="text" class="input" id="search-input" placeholder="Search for cards..." autocomplete="off">
