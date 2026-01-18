@@ -101,6 +101,117 @@ function updateMobileTabContent() {
 }
 
 /**
+ * Card modal state
+ */
+let cardModalCard = null;
+
+/**
+ * Open card preview modal
+ */
+function openCardModal(card, zone = 'deck') {
+  if (!card || window.innerWidth > 768) return;
+
+  cardModalCard = { card, zone };
+
+  const backdrop = document.getElementById('card-modal-backdrop');
+  const modal = document.getElementById('card-modal');
+  const imageContainer = document.getElementById('card-modal-image');
+  const nameEl = document.getElementById('card-modal-name');
+  const typeEl = document.getElementById('card-modal-type');
+  const priceEl = document.getElementById('card-modal-price');
+  const actionsEl = document.getElementById('card-modal-actions');
+
+  // Populate content
+  const imageUrl = card.imageUris?.normal || card.imageUris?.small || '';
+  imageContainer.innerHTML = imageUrl ? `<img src="${imageUrl}" alt="${card.name}">` : '';
+  nameEl.textContent = card.name;
+  typeEl.textContent = card.typeLine || '';
+  priceEl.textContent = card.prices?.usd ? `$${card.prices.usd}` : '';
+
+  // Build action buttons
+  actionsEl.innerHTML = `
+    <button class="btn btn-secondary btn-sm" data-action="remove">
+      <span>−</span>
+    </button>
+    <span style="min-width: 30px; text-align: center;">1</span>
+    <button class="btn btn-secondary btn-sm" data-action="add">
+      <span>+</span>
+    </button>
+    <button class="btn btn-secondary btn-sm" data-action="sideboard">SB</button>
+    <button class="btn btn-secondary btn-sm" data-action="maybeboard">MB</button>
+    <button class="btn btn-danger btn-sm" data-action="delete">✕</button>
+  `;
+
+  // Show modal
+  backdrop.classList.remove('hidden');
+  modal.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    backdrop.classList.add('visible');
+    modal.classList.add('visible');
+  });
+}
+
+/**
+ * Close card preview modal
+ */
+function closeCardModal() {
+  const backdrop = document.getElementById('card-modal-backdrop');
+  const modal = document.getElementById('card-modal');
+
+  backdrop.classList.remove('visible');
+  modal.classList.remove('visible');
+
+  setTimeout(() => {
+    backdrop.classList.add('hidden');
+    modal.classList.add('hidden');
+    cardModalCard = null;
+  }, 200);
+}
+
+/**
+ * Setup card modal event listeners
+ */
+function setupCardModal() {
+  const backdrop = document.getElementById('card-modal-backdrop');
+  const actionsEl = document.getElementById('card-modal-actions');
+
+  if (backdrop) {
+    backdrop.addEventListener('click', closeCardModal);
+  }
+
+  if (actionsEl) {
+    actionsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn || !cardModalCard) return;
+
+      const action = btn.dataset.action;
+      const { card, zone } = cardModalCard;
+
+      switch (action) {
+        case 'add':
+          addCardToZone(card, zone);
+          break;
+        case 'remove':
+          removeCardFromZone(card.id, zone);
+          break;
+        case 'delete':
+          deleteCard(card.id, zone);
+          closeCardModal();
+          break;
+        case 'sideboard':
+          moveCard(card.id, zone, 'sideboard');
+          closeCardModal();
+          break;
+        case 'maybeboard':
+          moveCard(card.id, zone, 'maybeboard');
+          closeCardModal();
+          break;
+      }
+    });
+  }
+}
+
+/**
  * Handle card preview updates
  * Shows hovered card, or commander if no card hovered
  */
@@ -156,7 +267,13 @@ function renderCurrentZone(deckData) {
   const showMaybeboard = filterState.boards.includes('maybeboard');
 
   const handlers = {
-    onPreview: handlePreview,
+    onPreview: (card, zone) => {
+      handlePreview(card);
+      // On mobile, tapping opens modal
+      if (window.innerWidth <= 768 && card) {
+        openCardModal(card, zone || 'deck');
+      }
+    },
     onAdd: (card, zone) => addCardToZone(card, zone || 'deck'),
     onRemove: (cardId, zone, deleteAll) => {
       const targetZone = zone || 'deck';
@@ -1130,6 +1247,7 @@ function init() {
 
   // Setup mobile tab navigation
   setupMobileTabs();
+  setupCardModal();
   window.addEventListener('resize', updateMobileTabContent);
 
   console.log('DeckBuilder initialized');
