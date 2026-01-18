@@ -3,6 +3,7 @@
  */
 
 const STORAGE_KEY = 'deckbuilder_saved_decks';
+const LAST_DECK_KEY = 'deckbuilder_last_deck';
 
 /**
  * Get all saved decks from localStorage
@@ -55,4 +56,20 @@ export function deleteSavedDeck(deckId) {
  */
 export function getSavedDeckById(deckId) {
   return getSavedDecks().find(d => d.id === deckId);
+}
+
+/**
+ * Save last selected deck ID
+ * @param {string} deckId - ID of the selected deck
+ */
+export function setLastDeckId(deckId) {
+  localStorage.setItem(LAST_DECK_KEY, deckId);
+}
+
+/**
+ * Get last selected deck ID
+ * @returns {string|null} The last selected deck ID or null
+ */
+export function getLastDeckId() {
+  return localStorage.getItem(LAST_DECK_KEY);
 }

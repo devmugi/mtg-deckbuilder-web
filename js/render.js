@@ -135,7 +135,15 @@ export function renderDeck(cards, zone, handlers) {
     // Quantity minus
     row.querySelector('.qty-minus').addEventListener('click', (e) => {
       e.stopPropagation();
-      handlers.onRemove(cardId, zone);
+      // Animate if this is the last card
+      if (cardEntry && cardEntry.quantity === 1) {
+        row.classList.add('removing');
+        row.addEventListener('animationend', () => {
+          handlers.onRemove(cardId, zone);
+        }, { once: true });
+      } else {
+        handlers.onRemove(cardId, zone);
+      }
     });
 
     // Quantity plus
@@ -149,7 +157,10 @@ export function renderDeck(cards, zone, handlers) {
     // Delete card
     row.querySelector('.delete-card').addEventListener('click', (e) => {
       e.stopPropagation();
-      handlers.onRemove(cardId, zone, true); // true = delete all
+      row.classList.add('removing');
+      row.addEventListener('animationend', () => {
+        handlers.onRemove(cardId, zone, true); // true = delete all
+      }, { once: true });
     });
 
     // Move buttons
@@ -439,7 +450,15 @@ export function renderSplitView(data, handlers) {
     // Quantity minus
     row.querySelector('.qty-minus')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      handlers.onRemove?.(cardId, zone);
+      // Animate if this is the last card
+      if (cardEntry.quantity === 1) {
+        row.classList.add('removing');
+        row.addEventListener('animationend', () => {
+          handlers.onRemove?.(cardId, zone);
+        }, { once: true });
+      } else {
+        handlers.onRemove?.(cardId, zone);
+      }
     });
 
     // Quantity plus
@@ -451,7 +470,10 @@ export function renderSplitView(data, handlers) {
     // Delete card
     row.querySelector('.delete-card')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      handlers.onRemove?.(cardId, zone, true);
+      row.classList.add('removing');
+      row.addEventListener('animationend', () => {
+        handlers.onRemove?.(cardId, zone, true);
+      }, { once: true });
     });
 
     // Move buttons

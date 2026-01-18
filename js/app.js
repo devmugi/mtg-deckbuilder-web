@@ -12,7 +12,7 @@ import {
 import { calculateManaCurve, calculateColorDistribution, calculateTypeDistribution } from './stats.js';
 import { getAllPrecons, getPreconById } from './precons.js';
 import { fetchCardsBatch } from './scryfall.js';
-import { getSavedDecks, saveDeck, deleteSavedDeck, getSavedDeckById } from './storage.js';
+import { getSavedDecks, saveDeck, deleteSavedDeck, getSavedDeckById, setLastDeckId, getLastDeckId } from './storage.js';
 import { showToast } from './toast.js';
 
 /**
@@ -398,8 +398,9 @@ function selectDeck(deckId) {
   const precon = getPreconById(deckId);
   if (!precon) return;
 
-  // Store selected deck ID
+  // Store selected deck ID and persist to localStorage
   selectedDeckId = deckId;
+  setLastDeckId(deckId);
 
   // Close dropdown
   closeDeckSelector();
@@ -467,8 +468,16 @@ function initDeckSelector() {
   // Populate dropdown
   populateDeckSelector();
 
-  // Auto-select Najeela deck
-  setTimeout(() => selectDeck('najeela-warriors'), 100);
+  // Load last selected deck, or default to Najeela
+  const lastDeckId = getLastDeckId() || 'najeela-warriors';
+  setTimeout(() => {
+    // Check if it's a saved deck or precon
+    if (getSavedDeckById(lastDeckId)) {
+      loadSavedDeck(lastDeckId);
+    } else {
+      selectDeck(lastDeckId);
+    }
+  }, 100);
 }
 
 /**
@@ -588,8 +597,9 @@ async function loadSavedDeck(deckId) {
   currentLoadId++;
   const thisLoadId = currentLoadId;
 
-  // Store selected deck ID and close dropdown
+  // Store selected deck ID, persist to localStorage, and close dropdown
   selectedDeckId = deckId;
+  setLastDeckId(deckId);
   closeDeckSelector();
 
   // Update button with selected deck
@@ -887,6 +897,7 @@ async function importDeck() {
 
   // Update deck selector to show saved deck
   selectedDeckId = savedDeck.id;
+  setLastDeckId(savedDeck.id);
   await populateDeckSelector();
   updateSelectedDeckButton(savedDeck.id);
 
