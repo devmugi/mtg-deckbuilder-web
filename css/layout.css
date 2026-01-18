@@ -508,4 +508,63 @@ body {
     grid-template-columns: 1fr;
     padding: var(--space-sm);
   }
+
+  /* Mobile Bottom Tabs */
+  .mobile-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    display: flex;
+    background: var(--bg-raised);
+    border-top: 1px solid var(--border-subtle);
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 100;
+  }
+
+  .mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+
+  .mobile-tab svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mobile-tab.active {
+    color: var(--accent);
+  }
+
+  .mobile-tab:hover {
+    color: var(--text-primary);
+  }
+}
+
+/* ==========================================================================
+   HIDE MOBILE ELEMENTS ON DESKTOP
+   ========================================================================== */
+
+/* Hide mobile elements on desktop */
+.mobile-tabs,
+.card-modal,
+.card-modal-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-tabs {
+    display: flex;
+  }
 }
