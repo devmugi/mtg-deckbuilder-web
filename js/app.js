@@ -2,7 +2,7 @@
  * Main application entry point
  */
 
-import { initSearch } from './search.js';
+import { initSearch, setDeckColors } from './search.js';
 import { initRender, renderPreview, renderDeck, renderSplitView, renderManaCurve, renderColorPie, renderTypeBreakdown, renderZoneCounts } from './render.js';
 import {
   addCard, removeCard, subscribe, getDeck, setDeck,
@@ -441,6 +441,7 @@ async function loadPreconDeck(deckId) {
   setDeck([], null);
   commanderCard = null;
   renderPreview(null);
+  setDeckColors([]); // Clear search filter colors
 
   // Get all card lists
   const mainboardNames = precon.cards || [];
@@ -525,6 +526,8 @@ async function loadPreconDeck(deckId) {
   if (commander) {
     commanderCard = commander;
     renderPreview(commander);
+    // Set deck colors for search filter
+    setDeckColors(commander.colorIdentity || []);
   }
 }
 
