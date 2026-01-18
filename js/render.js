@@ -168,6 +168,53 @@ export function renderDeck(cards, zone, handlers) {
 }
 
 /**
+ * Render cards in grid view
+ * @param {Array} cards - Card entries to render
+ * @param {Object} handlers - Event handlers { onPreview }
+ */
+export function renderGrid(cards, handlers) {
+  const container = document.getElementById('deck-list');
+  const emptyState = document.getElementById('deck-empty');
+
+  if (!container) return;
+
+  if (cards.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add('hidden');
+
+  // Sort by name
+  const sortedCards = [...cards].sort((a, b) =>
+    a.card.name.localeCompare(b.card.name)
+  );
+
+  const html = `
+    <div class="deck-grid">
+      ${sortedCards.map(({ card, quantity }) => `
+        <div class="grid-card" data-card-id="${card.id}">
+          <img src="${card.images.small}" alt="${card.name}" loading="lazy">
+          ${quantity > 1 ? `<span class="grid-card-qty">×${quantity}</span>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Add hover handlers for preview
+  container.querySelectorAll('.grid-card').forEach(gridCard => {
+    const cardId = gridCard.dataset.cardId;
+    const cardEntry = cards.find(c => c.card.id === cardId);
+    if (cardEntry && handlers.onPreview) {
+      gridCard.addEventListener('mouseenter', () => handlers.onPreview(cardEntry.card));
+    }
+  });
+}
+
+/**
  * Render mana cost symbols (simplified)
  */
 function renderManaCost(manaCost) {
