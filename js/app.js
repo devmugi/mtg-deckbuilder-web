@@ -269,6 +269,96 @@ function formatDeckList() {
 }
 
 /**
+ * Show the import modal
+ */
+function showImportModal() {
+  const modal = document.getElementById('import-modal');
+  const textarea = document.getElementById('import-textarea');
+  textarea.value = '';
+  modal.classList.remove('hidden');
+  textarea.focus();
+}
+
+/**
+ * Hide the import modal
+ */
+function hideImportModal() {
+  const modal = document.getElementById('import-modal');
+  modal.classList.add('hidden');
+}
+
+/**
+ * Import deck from textarea content
+ */
+async function importDeck() {
+  const textarea = document.getElementById('import-textarea');
+  const text = textarea.value.trim();
+
+  if (!text) {
+    alert('No cards to import');
+    return;
+  }
+
+  const parsed = parseDeckList(text);
+  const allCards = [
+    ...parsed.deck.map(c => ({ ...c, zone: 'deck' })),
+    ...parsed.sideboard.map(c => ({ ...c, zone: 'sideboard' })),
+    ...parsed.maybeboard.map(c => ({ ...c, zone: 'maybeboard' }))
+  ];
+
+  if (allCards.length === 0) {
+    alert('No valid cards found');
+    return;
+  }
+
+  hideImportModal();
+  clearAllZones();
+
+  // Show loading
+  loadingIndicator.classList.remove('hidden');
+
+  // Get unique card names
+  const uniqueNames = [...new Set(allCards.map(c => c.name))];
+  const notFound = [];
+  const cardMap = new Map();
+
+  // Fetch in batches
+  const batchSize = 10;
+  for (let i = 0; i < uniqueNames.length; i += batchSize) {
+    const batch = uniqueNames.slice(i, i + batchSize);
+    loadingProgress.textContent = `${Math.min(i + batchSize, uniqueNames.length)}/${uniqueNames.length}`;
+
+    const cards = await fetchCardsBatch(batch);
+    cards.forEach(card => cardMap.set(card.name.toLowerCase(), card));
+
+    // Check for not found
+    batch.forEach(name => {
+      if (!cardMap.has(name.toLowerCase())) {
+        notFound.push(name);
+      }
+    });
+  }
+
+  // Add cards to zones
+  allCards.forEach(({ name, quantity, zone }) => {
+    const card = cardMap.get(name.toLowerCase());
+    if (card) {
+      for (let i = 0; i < quantity; i++) {
+        addCardToZone(card, zone);
+      }
+    }
+  });
+
+  loadingIndicator.classList.add('hidden');
+
+  // Report results
+  const imported = allCards.length - notFound.length;
+  if (notFound.length > 0) {
+    alert(`Imported ${imported} cards.\n\nNot found (${notFound.length}):\n${notFound.slice(0, 10).join('\n')}${notFound.length > 10 ? '\n...' : ''}`);
+  }
+}
+
+/**
  * Initialize application
  */
 function init() {
