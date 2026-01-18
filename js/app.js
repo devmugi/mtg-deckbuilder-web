@@ -393,6 +393,36 @@ async function exportDeck() {
 }
 
 /**
+ * Initialize import/export functionality
+ */
+function initImportExport() {
+  const importBtn = document.getElementById('import-btn');
+  const exportBtn = document.getElementById('export-btn');
+  const importModal = document.getElementById('import-modal');
+  const importCancel = document.getElementById('import-cancel');
+  const importConfirm = document.getElementById('import-confirm');
+
+  importBtn?.addEventListener('click', showImportModal);
+  exportBtn?.addEventListener('click', exportDeck);
+  importCancel?.addEventListener('click', hideImportModal);
+  importConfirm?.addEventListener('click', importDeck);
+
+  // Close modal on backdrop click
+  importModal?.addEventListener('click', (e) => {
+    if (e.target === importModal) {
+      hideImportModal();
+    }
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !importModal.classList.contains('hidden')) {
+      hideImportModal();
+    }
+  });
+}
+
+/**
  * Initialize application
  */
 function init() {
@@ -406,6 +436,7 @@ function init() {
   initSearch(handlePreview);
   initZoneTabs();
   initZoneCounts();
+  initImportExport();
 
   // Subscribe to deck changes
   subscribe(handleDeckChange);
