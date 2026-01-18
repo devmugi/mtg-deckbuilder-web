@@ -3,17 +3,21 @@
  */
 
 import { initSearch } from './search.js';
-import { initRender, renderPreview, renderDeck, renderManaCurve, renderColorPie } from './render.js';
-import { subscribe, getDeck, clearDeck } from './deck.js';
+import { initRender, renderPreview, renderDeck, renderManaCurve, renderColorPie, renderZoneCounts } from './render.js';
+import {
+  addCard, removeCard, subscribe, getDeck, setDeck,
+  isModified, getCurrentPrecon,
+  addCardToZone, removeCardFromZone, moveCard, getZone, getZoneStats, clearAllZones
+} from './deck.js';
 import { calculateManaCurve, calculateColorDistribution } from './stats.js';
 import { getAllPrecons, getPreconById } from './precons.js';
 import { fetchCardsBatch } from './scryfall.js';
-import { isModified, setDeck, getCurrentPrecon } from './deck.js';
 
 /**
  * Current preview card state
  */
 let currentPreviewCard = null;
+let currentZone = 'deck';
 let isLoading = false;
 let loadingIndicator;
 let loadingProgress;
@@ -28,11 +32,100 @@ function handlePreview(card) {
 }
 
 /**
+ * Initialize zone tab click handlers
+ */
+function initZoneTabs() {
+  const tabsContainer = document.getElementById('zone-tabs');
+  if (!tabsContainer) return;
+
+  tabsContainer.addEventListener('click', (e) => {
+    const tab = e.target.closest('.zone-tab');
+    if (!tab) return;
+    switchZone(tab.dataset.zone);
+  });
+}
+
+/**
+ * Switch to a different zone
+ */
+function switchZone(zone) {
+  currentZone = zone;
+  document.querySelectorAll('.zone-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.zone === zone);
+  });
+  const deckData = getDeck();
+  renderCurrentZone(deckData);
+}
+
+/**
+ * Render the current zone's cards
+ */
+function renderCurrentZone(deckData) {
+  const cards = deckData[currentZone] || [];
+  renderDeck(cards, currentZone, {
+    onPreview: handlePreview,
+    onAdd: (card) => addCardToZone(card, currentZone),
+    onRemove: (cardId, deleteAll) => {
+      if (deleteAll) {
+        // Remove all copies by getting the card entry and removing that many
+        const cards = getZone(currentZone);
+        const entry = cards.find(e => e.card.id === cardId);
+        if (entry) {
+          for (let i = 0; i < entry.quantity; i++) {
+            removeCardFromZone(cardId, currentZone);
+          }
+        }
+      } else {
+        removeCardFromZone(cardId, currentZone);
+      }
+    },
+    onMove: handleMove
+  });
+}
+
+/**
+ * Handle moving a card between zones
+ */
+function handleMove(cardId, fromZone, toZone) {
+  moveCard(cardId, fromZone, toZone);
+}
+
+/**
  * Handle deck state changes
  */
 function handleDeckChange(deckData) {
-  renderDeck(deckData);
-  updateStats(deckData.cards);
+  renderCurrentZone(deckData);
+  updateStats(deckData.deck);
+  updateBottomBar(deckData.stats);
+
+  const sbStats = getZoneStats('sideboard');
+  const mbStats = getZoneStats('maybeboard');
+  renderZoneCounts(sbStats.totalCards, mbStats.totalCards);
+}
+
+/**
+ * Update bottom bar statistics
+ */
+function updateBottomBar(stats) {
+  const statCards = document.getElementById('stat-cards');
+  const statUnique = document.getElementById('stat-unique');
+  const statPrice = document.getElementById('stat-price');
+
+  if (statCards) statCards.textContent = stats.totalCards;
+  if (statUnique) statUnique.textContent = stats.uniqueCards;
+  if (statPrice) statPrice.textContent = `$${stats.totalPrice.toFixed(2)}`;
+}
+
+/**
+ * Initialize zone count click handlers
+ */
+function initZoneCounts() {
+  document.querySelectorAll('.zone-count').forEach(el => {
+    el.addEventListener('click', () => {
+      const zone = el.dataset.zone;
+      if (zone) switchZone(zone);
+    });
+  });
 }
 
 /**
@@ -123,17 +216,20 @@ function init() {
   loadingProgress = document.getElementById('loading-progress');
   deckSelector = document.getElementById('deck-selector');
 
-  // Initialize modules with preview callback
-  initRender(handlePreview);
+  // Initialize modules
+  initRender();
   initSearch(handlePreview);
+  initZoneTabs();
+  initZoneCounts();
 
   // Subscribe to deck changes
   subscribe(handleDeckChange);
 
   // Initial render
   const initialDeck = getDeck();
-  renderDeck(initialDeck);
-  updateStats(initialDeck.cards);
+  renderCurrentZone(initialDeck);
+  updateStats(initialDeck.deck);
+  updateBottomBar(initialDeck.stats);
 
   // Populate deck selector
   if (deckSelector) {
@@ -147,17 +243,15 @@ function init() {
 
   // Clear deck button
   const clearBtn = document.getElementById('clear-deck-btn');
-  if (clearBtn) {
-    clearBtn.addEventListener('click', () => {
-      if (confirm('Clear all cards from deck?')) {
-        clearDeck();
-        renderPreview(null);
-        if (deckSelector) {
-          deckSelector.value = '';
-        }
+  clearBtn?.addEventListener('click', () => {
+    if (confirm('Clear all zones?')) {
+      clearAllZones();
+      renderPreview(null);
+      if (deckSelector) {
+        deckSelector.value = '';
       }
-    });
-  }
+    }
+  });
 
   console.log('DeckBuilder initialized');
 }
