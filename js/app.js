@@ -3,7 +3,7 @@
  */
 
 import { initSearch } from './search.js';
-import { initRender, renderPreview, renderDeck, renderManaCurve, renderColorPie, renderZoneCounts } from './render.js';
+import { initRender, renderPreview, renderDeck, renderGrid, renderManaCurve, renderColorPie, renderZoneCounts } from './render.js';
 import {
   addCard, removeCard, subscribe, getDeck, setDeck,
   isModified, getCurrentPrecon,
@@ -454,6 +454,56 @@ function initImportExport() {
 }
 
 /**
+ * Initialize filter controls
+ */
+function initFilters() {
+  const colorFilters = document.getElementById('color-filters');
+  const typeFilter = document.getElementById('type-filter');
+  const viewToggle = document.getElementById('view-toggle');
+
+  // Color filter clicks
+  colorFilters?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.color-filter');
+    if (!btn) return;
+
+    const color = btn.dataset.color;
+    btn.classList.toggle('active');
+
+    if (btn.classList.contains('active')) {
+      filterState.colors.push(color);
+    } else {
+      filterState.colors = filterState.colors.filter(c => c !== color);
+    }
+
+    const deckData = getDeck();
+    renderCurrentZone(deckData);
+  });
+
+  // Type filter change
+  typeFilter?.addEventListener('change', (e) => {
+    filterState.type = e.target.value;
+    const deckData = getDeck();
+    renderCurrentZone(deckData);
+  });
+
+  // View toggle clicks
+  viewToggle?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.view-btn');
+    if (!btn) return;
+
+    const view = btn.dataset.view;
+    filterState.view = view;
+
+    viewToggle.querySelectorAll('.view-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === view);
+    });
+
+    const deckData = getDeck();
+    renderCurrentZone(deckData);
+  });
+}
+
+/**
  * Initialize application
  */
 function init() {
@@ -468,6 +518,7 @@ function init() {
   initZoneTabs();
   initZoneCounts();
   initImportExport();
+  initFilters();
 
   // Subscribe to deck changes
   subscribe(handleDeckChange);
