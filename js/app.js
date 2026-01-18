@@ -3,8 +3,9 @@
  */
 
 import { initSearch } from './search.js';
-import { initRender, renderPreview, renderDeck } from './render.js';
+import { initRender, renderPreview, renderDeck, renderManaCurve, renderColorPie } from './render.js';
 import { subscribe, getDeck, clearDeck } from './deck.js';
+import { calculateManaCurve, calculateColorDistribution } from './stats.js';
 import { getAllPrecons, getPreconById } from './precons.js';
 import { fetchCardsBatch } from './scryfall.js';
 import { isModified, setDeck, getCurrentPrecon } from './deck.js';
@@ -31,6 +32,24 @@ function handlePreview(card) {
  */
 function handleDeckChange(deckData) {
   renderDeck(deckData);
+  updateStats(deckData.cards);
+}
+
+/**
+ * Update deck statistics charts
+ */
+function updateStats(cards) {
+  // Map deck entries to flat structure for stats functions
+  const statsCards = cards.map(entry => ({
+    cmc: entry.card.cmc,
+    colors: entry.card.colors,
+    quantity: entry.quantity
+  }));
+
+  const curve = calculateManaCurve(statsCards);
+  const colors = calculateColorDistribution(statsCards);
+  renderManaCurve(curve);
+  renderColorPie(colors);
 }
 
 /**
@@ -112,7 +131,9 @@ function init() {
   subscribe(handleDeckChange);
 
   // Initial render
-  renderDeck(getDeck());
+  const initialDeck = getDeck();
+  renderDeck(initialDeck);
+  updateStats(initialDeck.cards);
 
   // Populate deck selector
   if (deckSelector) {
