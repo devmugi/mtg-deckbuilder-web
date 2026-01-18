@@ -118,6 +118,49 @@ function updateMobileTabContent() {
 let cardModalCard = null;
 
 /**
+ * Mobile filter bar collapse state
+ */
+let lastScrollY = 0;
+let filterBarCollapsed = false;
+
+/**
+ * Setup mobile filter bar collapse on scroll
+ */
+function setupMobileFilterCollapse() {
+  const deckList = document.getElementById('deck-list');
+  const filterBar = document.getElementById('filter-bar');
+  const filterToggle = document.getElementById('filter-toggle');
+
+  if (!deckList || !filterBar) return;
+
+  // Scroll handler - hide filter on scroll down, show on scroll up
+  deckList.addEventListener('scroll', () => {
+    if (window.innerWidth > 768) return;
+
+    const currentScrollY = deckList.scrollTop;
+    const scrollingDown = currentScrollY > lastScrollY && currentScrollY > 50;
+
+    if (scrollingDown && !filterBarCollapsed) {
+      filterBar.classList.add('collapsed');
+      filterBarCollapsed = true;
+    } else if (currentScrollY < lastScrollY && filterBarCollapsed) {
+      filterBar.classList.remove('collapsed');
+      filterBarCollapsed = false;
+    }
+
+    lastScrollY = currentScrollY;
+  });
+
+  // Toggle button handler
+  if (filterToggle) {
+    filterToggle.addEventListener('click', () => {
+      filterBarCollapsed = !filterBarCollapsed;
+      filterBar.classList.toggle('collapsed', filterBarCollapsed);
+    });
+  }
+}
+
+/**
  * Open card preview modal
  */
 function openCardModal(card, zone = 'deck') {
@@ -1260,6 +1303,7 @@ function init() {
   // Setup mobile tab navigation
   setupMobileTabs();
   setupCardModal();
+  setupMobileFilterCollapse();
   window.addEventListener('resize', updateMobileTabContent);
 
   console.log('DeckBuilder initialized');

@@ -473,6 +473,11 @@ body {
   text-align: center;
 }
 
+/* Hide mobile-only elements on desktop */
+.filter-toggle {
+  display: none;
+}
+
 /* ==========================================================================
    MOBILE RESPONSIVE (≤768px)
    ========================================================================== */
@@ -528,6 +533,41 @@ body {
   .type-filters,
   .board-filters {
     flex-wrap: wrap;
+  }
+
+  /* Collapsible filter bar */
+  .filter-bar {
+    transition: transform 0.2s ease, opacity 0.2s ease, max-height 0.2s ease;
+    max-height: 200px;
+    overflow: hidden;
+  }
+
+  .filter-bar.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  /* Filter toggle button */
+  .filter-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: var(--space-xs);
+    background: var(--bg-inset);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-bottom: var(--space-xs);
+    transition: color var(--transition-fast);
+  }
+
+  .filter-toggle:hover {
+    color: var(--text-primary);
   }
 
   /* Mobile Topbar */
