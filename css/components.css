@@ -370,3 +370,85 @@
 .color-swatch--R { background: var(--mtg-red); }
 .color-swatch--G { background: var(--mtg-green); }
 .color-swatch--C { background: var(--mtg-colorless); }
+
+/* ==========================================================================
+   ZONE TABS
+   ========================================================================== */
+
+.zone-tabs {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.zone-tab {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.zone-tab:hover {
+  background: var(--bg-pressed);
+  color: var(--text-primary);
+}
+
+.zone-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-base);
+}
+
+/* ==========================================================================
+   MOVE BUTTONS
+   ========================================================================== */
+
+.move-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.btn-move {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-move:hover {
+  background: var(--bg-raised);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ==========================================================================
+   ZONE COUNTS
+   ========================================================================== */
+
+.zone-counts {
+  display: flex;
+  gap: var(--space-md);
+  margin-left: auto;
+}
+
+.zone-count {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.zone-count:hover {
+  color: var(--text-secondary);
+}
