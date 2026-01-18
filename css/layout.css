@@ -73,6 +73,11 @@ body {
   max-width: 500px;
 }
 
+.topbar-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
 /* ==========================================================================
    MAIN CONTENT AREA
    ========================================================================== */
@@ -361,4 +366,66 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ==========================================================================
+   SPLIT VIEW (Type Filter Active)
+   ========================================================================== */
+
+.split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  height: 100%;
+}
+
+.split-column {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.split-column-main {
+  border-right: 1px solid var(--border-subtle);
+  padding-right: var(--space-md);
+}
+
+.split-column-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  overflow-y: auto;
+}
+
+.split-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.split-section-fit {
+  flex: 0 0 auto;
+}
+
+.split-header {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-xs);
+}
+
+.split-cards {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.split-empty {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  padding: var(--space-md);
+  text-align: center;
 }

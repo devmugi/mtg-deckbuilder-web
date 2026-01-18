@@ -3,7 +3,7 @@
  */
 
 import { initSearch } from './search.js';
-import { initRender, renderPreview, renderDeck, renderGrid, renderManaCurve, renderColorPie, renderTypeBreakdown, renderZoneCounts } from './render.js';
+import { initRender, renderPreview, renderDeck, renderSplitView, renderManaCurve, renderColorPie, renderTypeBreakdown, renderZoneCounts } from './render.js';
 import {
   addCard, removeCard, subscribe, getDeck, setDeck,
   isModified, getCurrentPrecon,
@@ -18,11 +18,10 @@ import { fetchCardsBatch } from './scryfall.js';
  */
 let currentPreviewCard = null;
 let commanderCard = null;
-let currentZone = 'deck';
 let filterState = {
-  colors: ['W', 'U', 'B', 'R', 'G', 'C'],  // Selected colors (AND logic)
+  colors: [],  // Selected colors - empty = show all, otherwise AND logic
   type: '',  // Single type filter, empty = show all
-  view: 'list'
+  boards: []  // Visible boards: 'sideboard', 'maybeboard'
 };
 let isLoading = false;
 let loadingIndicator;
@@ -39,45 +38,16 @@ function handlePreview(card) {
 }
 
 /**
- * Initialize zone tab click handlers
- */
-function initZoneTabs() {
-  const tabsContainer = document.getElementById('zone-tabs');
-  if (!tabsContainer) return;
-
-  tabsContainer.addEventListener('click', (e) => {
-    const tab = e.target.closest('.zone-tab');
-    if (!tab) return;
-    switchZone(tab.dataset.zone);
-  });
-}
-
-/**
- * Switch to a different zone
- */
-function switchZone(zone) {
-  currentZone = zone;
-  document.querySelectorAll('.zone-tab').forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.zone === zone);
-  });
-  const deckData = getDeck();
-  renderCurrentZone(deckData);
-}
-
-/**
  * Filter cards based on current filter state
  * @param {Array} cards - Card entries to filter
  * @returns {Array} Filtered cards
  */
 function filterCards(cards) {
-  const allColors = ['W', 'U', 'B', 'R', 'G', 'C'];
-  const allColorsSelected = allColors.every(c => filterState.colors.includes(c));
-
   return cards.filter(({ card }) => {
-    // Color filter - if all colors selected, show all cards
+    // Color filter - empty = show all, otherwise AND logic
     let matchesColor = true;
 
-    if (!allColorsSelected) {
+    if (filterState.colors.length > 0) {
       const cardColors = card.colors || [];
       const selectedColors = filterState.colors.filter(c => c !== 'C');
       const colorlessSelected = filterState.colors.includes('C');
@@ -89,8 +59,8 @@ function filterCards(cards) {
         // Only C selected, hide colored cards
         matchesColor = false;
       } else {
-        // Card must have at least one of the selected colors
-        matchesColor = cardColors.some(c => selectedColors.includes(c));
+        // Card must have ALL selected colors (AND logic)
+        matchesColor = selectedColors.every(c => cardColors.includes(c));
       }
     }
 
@@ -103,34 +73,51 @@ function filterCards(cards) {
 }
 
 /**
- * Render the current zone's cards
+ * Render zones based on board filter selection
  */
 function renderCurrentZone(deckData) {
-  const cards = deckData[currentZone] || [];
-  const filteredCards = filterCards(cards);
+  const filteredDeck = filterCards(deckData.deck || []);
+  const filteredSideboard = filterCards(deckData.sideboard || []);
+  const filteredMaybeboard = filterCards(deckData.maybeboard || []);
 
-  if (filterState.view === 'grid') {
-    renderGrid(filteredCards, { onPreview: handlePreview });
-  } else {
-    renderDeck(filteredCards, currentZone, {
-      onPreview: handlePreview,
-      onAdd: (card) => addCardToZone(card, currentZone),
-      onRemove: (cardId, deleteAll) => {
-        if (deleteAll) {
-          const zoneCards = getZone(currentZone);
-          const entry = zoneCards.find(e => e.card.id === cardId);
-          if (entry) {
-            for (let i = 0; i < entry.quantity; i++) {
-              removeCardFromZone(cardId, currentZone);
-            }
+  const showSideboard = filterState.boards.includes('sideboard');
+  const showMaybeboard = filterState.boards.includes('maybeboard');
+
+  const handlers = {
+    onPreview: handlePreview,
+    onAdd: (card, zone) => addCardToZone(card, zone || 'deck'),
+    onRemove: (cardId, zone, deleteAll) => {
+      const targetZone = zone || 'deck';
+      if (deleteAll) {
+        const zoneCards = getZone(targetZone);
+        const entry = zoneCards.find(e => e.card.id === cardId);
+        if (entry) {
+          for (let i = 0; i < entry.quantity; i++) {
+            removeCardFromZone(cardId, targetZone);
           }
-        } else {
-          removeCardFromZone(cardId, currentZone);
         }
-      },
-      onMove: handleMove
-    });
+      } else {
+        removeCardFromZone(cardId, targetZone);
+      }
+    },
+    onMove: handleMove
+  };
+
+  // No boards selected - show mainboard only in 2 columns
+  if (!showSideboard && !showMaybeboard) {
+    renderDeck(filteredDeck, 'deck', handlers);
+    return;
   }
+
+  // Show split view with selected boards
+  renderSplitView(
+    {
+      deck: filteredDeck,
+      sideboard: showSideboard ? filteredSideboard : null,
+      maybeboard: showMaybeboard ? filteredMaybeboard : null
+    },
+    handlers
+  );
 }
 
 /**
@@ -147,10 +134,25 @@ function handleDeckChange(deckData) {
   renderCurrentZone(deckData);
   updateStats(deckData.deck);
   updateBottomBar(deckData.stats);
+  updateBoardCounts(deckData);
 
   const sbStats = getZoneStats('sideboard');
   const mbStats = getZoneStats('maybeboard');
   renderZoneCounts(sbStats.totalCards, mbStats.totalCards);
+}
+
+/**
+ * Update board filter counts
+ */
+function updateBoardCounts(deckData) {
+  const sbCount = document.getElementById('board-count-sideboard');
+  const mbCount = document.getElementById('board-count-maybeboard');
+
+  const sbTotal = (deckData.sideboard || []).reduce((sum, e) => sum + e.quantity, 0);
+  const mbTotal = (deckData.maybeboard || []).reduce((sum, e) => sum + e.quantity, 0);
+
+  if (sbCount) sbCount.textContent = sbTotal;
+  if (mbCount) mbCount.textContent = mbTotal;
 }
 
 /**
@@ -164,18 +166,6 @@ function updateBottomBar(stats) {
   if (statCards) statCards.textContent = stats.totalCards;
   if (statUnique) statUnique.textContent = stats.uniqueCards;
   if (statPrice) statPrice.textContent = `$${stats.totalPrice.toFixed(2)}`;
-}
-
-/**
- * Initialize zone count click handlers
- */
-function initZoneCounts() {
-  document.querySelectorAll('.zone-count').forEach(el => {
-    el.addEventListener('click', () => {
-      const zone = el.dataset.zone;
-      if (zone) switchZone(zone);
-    });
-  });
 }
 
 /**
@@ -491,7 +481,7 @@ function initImportExport() {
 function initFilters() {
   const colorFilters = document.getElementById('color-filters');
   const typeFilters = document.getElementById('type-filters');
-  const viewToggle = document.getElementById('view-toggle');
+  const boardFilters = document.getElementById('board-filters');
 
   // Color filter clicks
   colorFilters?.addEventListener('click', (e) => {
@@ -505,6 +495,24 @@ function initFilters() {
       filterState.colors.push(color);
     } else {
       filterState.colors = filterState.colors.filter(c => c !== color);
+    }
+
+    const deckData = getDeck();
+    renderCurrentZone(deckData);
+  });
+
+  // Board filter clicks (multi-select toggle)
+  boardFilters?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.board-filter-btn');
+    if (!btn) return;
+
+    const board = btn.dataset.board;
+    btn.classList.toggle('active');
+
+    if (btn.classList.contains('active')) {
+      filterState.boards.push(board);
+    } else {
+      filterState.boards = filterState.boards.filter(b => b !== board);
     }
 
     const deckData = getDeck();
@@ -533,22 +541,6 @@ function initFilters() {
     const deckData = getDeck();
     renderCurrentZone(deckData);
   });
-
-  // View toggle clicks
-  viewToggle?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.view-btn');
-    if (!btn) return;
-
-    const view = btn.dataset.view;
-    filterState.view = view;
-
-    viewToggle.querySelectorAll('.view-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.view === view);
-    });
-
-    const deckData = getDeck();
-    renderCurrentZone(deckData);
-  });
 }
 
 /**
@@ -563,8 +555,6 @@ function init() {
   // Initialize modules
   initRender();
   initSearch(handlePreview);
-  initZoneTabs();
-  initZoneCounts();
   initImportExport();
   initFilters();
 
@@ -594,19 +584,6 @@ function init() {
     deckSelector.value = 'najeela-warriors';
     loadPreconDeck('najeela-warriors');
   }
-
-  // Clear deck button
-  const clearBtn = document.getElementById('clear-deck-btn');
-  clearBtn?.addEventListener('click', () => {
-    if (confirm('Clear all zones?')) {
-      clearAllZones();
-      commanderCard = null;
-      renderPreview(null);
-      if (deckSelector) {
-        deckSelector.value = '';
-      }
-    }
-  });
 
   console.log('DeckBuilder initialized');
 }

@@ -29,6 +29,10 @@
         <input type="text" class="input" id="search-input" placeholder="Search for cards..." autocomplete="off">
         <div class="dropdown hidden" id="search-dropdown"></div>
       </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" id="import-btn">Import</button>
+        <button class="btn btn-primary btn-sm" id="export-btn">Export</button>
+      </div>
     </header>
 
     <!-- Main Content -->
@@ -53,44 +57,46 @@
 
       <!-- Main Panel -->
       <section class="main-panel">
-        <div class="main-panel-header">
-          <div class="zone-tabs" id="zone-tabs">
-            <button class="zone-tab active" data-zone="deck">Deck</button>
-            <button class="zone-tab" data-zone="sideboard">Sideboard</button>
-            <button class="zone-tab" data-zone="maybeboard">Maybeboard</button>
-          </div>
-          <span class="loading-indicator hidden" id="loading-indicator">
-            Loading... <span id="loading-progress">0/100</span>
-          </span>
-          <div class="main-panel-actions">
-            <button class="btn btn-primary btn-sm" id="import-btn">Import</button>
-            <button class="btn btn-primary btn-sm" id="export-btn">Export</button>
-            <button class="btn btn-primary btn-sm" id="clear-deck-btn">Clear</button>
-          </div>
-        </div>
+        <span class="loading-indicator hidden" id="loading-indicator">
+          Loading... <span id="loading-progress">0/100</span>
+        </span>
 
         <div class="filter-bar" id="filter-bar">
           <div class="filter-group">
             <span class="filter-label">Colors</span>
             <div class="color-filters" id="color-filters">
-            <button class="color-filter active" data-color="W" title="White">
+            <button class="color-filter" data-color="W" title="White">
               <img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="White">
             </button>
-            <button class="color-filter active" data-color="U" title="Blue">
+            <button class="color-filter" data-color="U" title="Blue">
               <img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="Blue">
             </button>
-            <button class="color-filter active" data-color="B" title="Black">
+            <button class="color-filter" data-color="B" title="Black">
               <img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="Black">
             </button>
-            <button class="color-filter active" data-color="R" title="Red">
+            <button class="color-filter" data-color="R" title="Red">
               <img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="Red">
             </button>
-            <button class="color-filter active" data-color="G" title="Green">
+            <button class="color-filter" data-color="G" title="Green">
               <img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="Green">
             </button>
-            <button class="color-filter active" data-color="C" title="Colorless">
+            <button class="color-filter" data-color="C" title="Colorless">
               <img src="https://svgs.scryfall.io/card-symbols/C.svg" alt="Colorless">
             </button>
+            </div>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-group">
+            <span class="filter-label">Boards</span>
+            <div class="board-filters" id="board-filters">
+              <button class="board-filter-btn" data-board="sideboard" title="Show Sideboard">
+                <span>SB</span>
+                <span class="board-count" id="board-count-sideboard">0</span>
+              </button>
+              <button class="board-filter-btn" data-board="maybeboard" title="Show Maybeboard">
+                <span>MB</span>
+                <span class="board-count" id="board-count-maybeboard">0</span>
+              </button>
             </div>
           </div>
           <div class="filter-divider"></div>
@@ -126,11 +132,6 @@
                 <span class="type-count" id="type-count-Land">0</span>
               </button>
             </div>
-          </div>
-          <div class="filter-divider"></div>
-          <div class="view-toggle" id="view-toggle">
-            <button class="view-btn active" data-view="list" title="List view">☰</button>
-            <button class="view-btn" data-view="grid" title="Grid view">▦</button>
           </div>
         </div>
 

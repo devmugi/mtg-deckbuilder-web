@@ -365,3 +365,165 @@ export function renderZoneCounts(sideboardCount, maybeboardCount) {
   if (sbEl) sbEl.textContent = sideboardCount;
   if (mbEl) mbEl.textContent = maybeboardCount;
 }
+
+/**
+ * Render split view with mainboard on left, sideboard/maybeboard on right
+ * @param {Object} data - { deck, sideboard, maybeboard } filtered card arrays (sideboard/maybeboard can be null)
+ * @param {Object} handlers - Event handlers { onPreview, onAdd, onRemove, onMove }
+ */
+export function renderSplitView(data, handlers) {
+  const container = document.getElementById('deck-list');
+  const emptyState = document.getElementById('deck-empty');
+
+  if (!container) return;
+
+  const sbCards = data.sideboard || [];
+  const mbCards = data.maybeboard || [];
+  const totalCards = data.deck.length + sbCards.length + mbCards.length;
+
+  if (totalCards === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add('hidden');
+
+  // Sort cards
+  const sortedDeck = [...data.deck].sort((a, b) => a.card.name.localeCompare(b.card.name));
+  const sortedSB = [...sbCards].sort((a, b) => a.card.name.localeCompare(b.card.name));
+  const sortedMB = [...mbCards].sort((a, b) => a.card.name.localeCompare(b.card.name));
+
+  // Build right column sections
+  let rightColumnContent = '';
+
+  if (data.sideboard !== null) {
+    rightColumnContent += `
+      <div class="split-section split-section-fit">
+        <div class="split-header">Sideboard (${sbCards.length})</div>
+        <div class="split-cards">
+          ${sortedSB.length > 0
+            ? sortedSB.map(({ card, quantity }) => renderSplitCard(card, quantity, 'sideboard')).join('')
+            : '<div class="split-empty">No cards</div>'
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  if (data.maybeboard !== null) {
+    rightColumnContent += `
+      <div class="split-section split-section-fit">
+        <div class="split-header">Maybeboard (${mbCards.length})</div>
+        <div class="split-cards">
+          ${sortedMB.length > 0
+            ? sortedMB.map(({ card, quantity }) => renderSplitCard(card, quantity, 'maybeboard')).join('')
+            : '<div class="split-empty">No cards</div>'
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  const html = `
+    <div class="split-view">
+      <div class="split-column split-column-main">
+        <div class="split-header">Main Board (${data.deck.length})</div>
+        <div class="split-cards">
+          ${sortedDeck.map(({ card, quantity }) => renderSplitCard(card, quantity, 'deck')).join('')}
+        </div>
+      </div>
+      <div class="split-column split-column-side">
+        ${rightColumnContent}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Add event listeners
+  const allData = [
+    ...data.deck.map(e => ({ ...e, zone: 'deck' })),
+    ...(sbCards).map(e => ({ ...e, zone: 'sideboard' })),
+    ...(mbCards).map(e => ({ ...e, zone: 'maybeboard' }))
+  ];
+
+  container.querySelectorAll('.deck-card').forEach(row => {
+    const cardId = row.dataset.cardId;
+    const zone = row.dataset.zone;
+    const cardEntry = allData.find(c => c.card.id === cardId && c.zone === zone);
+
+    if (!cardEntry) return;
+
+    // Quantity minus
+    row.querySelector('.qty-minus')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handlers.onRemove?.(cardId, zone);
+    });
+
+    // Quantity plus
+    row.querySelector('.qty-plus')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handlers.onAdd?.(cardEntry.card, zone);
+    });
+
+    // Delete card
+    row.querySelector('.delete-card')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handlers.onRemove?.(cardId, zone, true);
+    });
+
+    // Move buttons
+    row.querySelectorAll('.btn-move').forEach(btn => {
+      btn.addEventListener('click', () => handlers.onMove?.(cardId, zone, btn.dataset.target));
+    });
+
+    // Hover preview
+    row.addEventListener('mouseenter', () => {
+      handlers.onPreview?.(cardEntry.card);
+    });
+  });
+}
+
+/**
+ * Render a card row for split view (same style as deck list)
+ */
+function renderSplitCard(card, quantity, zone) {
+  const price = card.prices.usd
+    ? `$${(parseFloat(card.prices.usd) * quantity).toFixed(2)}`
+    : '—';
+  const shortType = getShortType(card.typeLine);
+
+  const moveTargets = {
+    deck: ['sideboard', 'maybeboard'],
+    sideboard: ['deck', 'maybeboard'],
+    maybeboard: ['deck', 'sideboard']
+  }[zone] || [];
+
+  const moveLabels = { deck: 'D', sideboard: 'S', maybeboard: 'M' };
+
+  return `
+    <div class="deck-card" data-card-id="${card.id}" data-zone="${zone}">
+      <img class="deck-card-thumb" src="${card.images.artCrop}" alt="" loading="lazy">
+      <div class="deck-card-info">
+        <div class="deck-card-name">${escapeHtml(card.name)}</div>
+        <div class="deck-card-type">${escapeHtml(shortType)}</div>
+      </div>
+      <div class="deck-card-mana">${renderManaCost(card.manaCost)}</div>
+      <div class="deck-card-price">${price}</div>
+      <div class="deck-card-controls">
+        <button class="btn btn-primary btn-sm qty-minus" data-card-id="${card.id}">−</button>
+        <span class="deck-card-qty-value">${quantity}</span>
+        <button class="btn btn-primary btn-sm qty-plus" data-card-id="${card.id}">+</button>
+        ${moveTargets.map(target => `
+          <button class="btn-move" data-target="${target}" title="Move to ${target}">
+            ${moveLabels[target]}
+          </button>
+        `).join('')}
+      </div>
+      <div class="deck-card-actions">
+        <button class="btn btn-primary btn-sm delete-card" data-card-id="${card.id}" title="Remove">✕</button>
+      </div>
+    </div>
+  `;
+}
