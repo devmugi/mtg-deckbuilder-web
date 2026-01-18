@@ -316,6 +316,29 @@ export function renderColorPie(colors) {
 }
 
 /**
+ * Render type breakdown
+ * @param {Object} types - Type counts { Creature, Instant, Sorcery, ... }
+ */
+export function renderTypeBreakdown(types) {
+  const container = document.getElementById('type-breakdown');
+  if (!container) return;
+
+  const typeOrder = ['Creature', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Planeswalker', 'Land'];
+
+  const items = typeOrder
+    .filter(type => types[type] > 0)
+    .map(type => `
+      <div class="type-breakdown-item">
+        <span class="type-name">${type}</span>
+        <span class="type-count">${types[type]}</span>
+      </div>
+    `)
+    .join('');
+
+  container.innerHTML = items || '<div class="type-breakdown-empty">No cards</div>';
+}
+
+/**
  * Render zone counts for sideboard and maybeboard tabs
  * @param {number} sideboardCount - Number of cards in sideboard
  * @param {number} maybeboardCount - Number of cards in maybeboard

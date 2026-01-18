@@ -46,3 +46,32 @@ export function calculateColorDistribution(cards) {
 
   return colors;
 }
+
+/**
+ * Calculate type distribution
+ * @param {Array} cards - Array of card objects with typeLine and quantity
+ * @returns {Object} Type counts { Creature, Instant, Sorcery, Artifact, Enchantment, Planeswalker, Land }
+ */
+export function calculateTypeDistribution(cards) {
+  const types = {
+    Creature: 0,
+    Instant: 0,
+    Sorcery: 0,
+    Artifact: 0,
+    Enchantment: 0,
+    Planeswalker: 0,
+    Land: 0
+  };
+
+  cards.forEach(card => {
+    const typeLine = card.typeLine || '';
+    // Check each type (a card can be multiple types, e.g., "Artifact Creature")
+    Object.keys(types).forEach(type => {
+      if (typeLine.includes(type)) {
+        types[type] += card.quantity;
+      }
+    });
+  });
+
+  return types;
+}

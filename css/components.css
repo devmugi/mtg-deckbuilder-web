@@ -371,6 +371,39 @@
 .color-swatch--G { background: var(--mtg-green); }
 .color-swatch--C { background: var(--mtg-colorless); }
 
+/* Type Breakdown */
+.type-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.type-breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.type-name {
+  color: var(--text-secondary);
+}
+
+.type-count {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.type-breakdown-empty {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--space-sm);
+}
+
 /* ==========================================================================
    ZONE TABS
    ========================================================================== */

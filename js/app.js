@@ -3,13 +3,13 @@
  */
 
 import { initSearch } from './search.js';
-import { initRender, renderPreview, renderDeck, renderGrid, renderManaCurve, renderColorPie, renderZoneCounts } from './render.js';
+import { initRender, renderPreview, renderDeck, renderGrid, renderManaCurve, renderColorPie, renderTypeBreakdown, renderZoneCounts } from './render.js';
 import {
   addCard, removeCard, subscribe, getDeck, setDeck,
   isModified, getCurrentPrecon,
   addCardToZone, removeCardFromZone, moveCard, getZone, getZoneStats, clearAllZones
 } from './deck.js';
-import { calculateManaCurve, calculateColorDistribution } from './stats.js';
+import { calculateManaCurve, calculateColorDistribution, calculateTypeDistribution } from './stats.js';
 import { getAllPrecons, getPreconById } from './precons.js';
 import { fetchCardsBatch } from './scryfall.js';
 
@@ -167,13 +167,16 @@ function updateStats(cards) {
   const statsCards = cards.map(entry => ({
     cmc: entry.card.cmc,
     colors: entry.card.colors,
+    typeLine: entry.card.typeLine,
     quantity: entry.quantity
   }));
 
   const curve = calculateManaCurve(statsCards);
   const colors = calculateColorDistribution(statsCards);
+  const types = calculateTypeDistribution(statsCards);
   renderManaCurve(curve);
   renderColorPie(colors);
+  renderTypeBreakdown(types);
 }
 
 /**
