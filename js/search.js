@@ -59,8 +59,13 @@ export function initSearch(onPreview) {
   dropdown.addEventListener('click', (e) => {
     const item = e.target.closest('.search-result-item');
     if (item) {
+      e.preventDefault();
+      e.stopPropagation();
       const index = parseInt(item.dataset.index, 10);
-      selectCard(currentResults[index]);
+      const card = currentResults[index];
+      if (card) {
+        selectCard(card);
+      }
     }
   });
 
