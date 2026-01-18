@@ -749,19 +749,20 @@ body {
   }
 
   .deck-card-menu-btn {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: none;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-hover);
     border: none;
-    color: var(--text-muted);
-    font-size: 20px;
+    color: var(--text-primary);
+    font-size: 24px;
+    font-weight: bold;
     cursor: pointer;
     flex-shrink: 0;
     border-radius: var(--radius-sm);
-    transition: background var(--transition-fast);
+    margin-left: auto;
   }
 
   .deck-card-menu-btn:hover {
