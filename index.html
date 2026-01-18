@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/layout.css">
+  <link href="//cdn.jsdelivr.net/npm/mana-font@latest/css/mana.min.css" rel="stylesheet" type="text/css">
 </head>
 <body>
   <div class="app">
@@ -47,10 +48,6 @@
             <div class="color-pie" id="color-pie"></div>
             <div class="color-legend" id="color-legend"></div>
           </div>
-          <div class="stats-section">
-            <h3 class="stats-title">Card Types</h3>
-            <div class="type-breakdown" id="type-breakdown"></div>
-          </div>
         </div>
       </aside>
 
@@ -73,24 +70,64 @@
         </div>
 
         <div class="filter-bar" id="filter-bar">
-          <div class="color-filters" id="color-filters">
-            <button class="color-filter active" data-color="W" title="White">W</button>
-            <button class="color-filter active" data-color="U" title="Blue">U</button>
-            <button class="color-filter active" data-color="B" title="Black">B</button>
-            <button class="color-filter active" data-color="R" title="Red">R</button>
-            <button class="color-filter active" data-color="G" title="Green">G</button>
-            <button class="color-filter active" data-color="C" title="Colorless">C</button>
+          <div class="filter-group">
+            <span class="filter-label">Colors</span>
+            <div class="color-filters" id="color-filters">
+            <button class="color-filter active" data-color="W" title="White">
+              <img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="White">
+            </button>
+            <button class="color-filter active" data-color="U" title="Blue">
+              <img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="Blue">
+            </button>
+            <button class="color-filter active" data-color="B" title="Black">
+              <img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="Black">
+            </button>
+            <button class="color-filter active" data-color="R" title="Red">
+              <img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="Red">
+            </button>
+            <button class="color-filter active" data-color="G" title="Green">
+              <img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="Green">
+            </button>
+            <button class="color-filter active" data-color="C" title="Colorless">
+              <img src="https://svgs.scryfall.io/card-symbols/C.svg" alt="Colorless">
+            </button>
+            </div>
           </div>
-          <select class="type-filter" id="type-filter">
-            <option value="">All Types</option>
-            <option value="Creature">Creature</option>
-            <option value="Instant">Instant</option>
-            <option value="Sorcery">Sorcery</option>
-            <option value="Artifact">Artifact</option>
-            <option value="Enchantment">Enchantment</option>
-            <option value="Planeswalker">Planeswalker</option>
-            <option value="Land">Land</option>
-          </select>
+          <div class="filter-divider"></div>
+          <div class="filter-group">
+            <span class="filter-label">Types</span>
+            <div class="type-filters" id="type-filters">
+              <button class="type-filter-btn" data-type="Planeswalker" title="Planeswalkers">
+              <i class="ms ms-planeswalker"></i>
+              <span class="type-count" id="type-count-Planeswalker">0</span>
+            </button>
+            <button class="type-filter-btn" data-type="Creature" title="Creatures">
+              <i class="ms ms-creature"></i>
+              <span class="type-count" id="type-count-Creature">0</span>
+            </button>
+            <button class="type-filter-btn" data-type="Artifact" title="Artifacts">
+              <i class="ms ms-artifact"></i>
+              <span class="type-count" id="type-count-Artifact">0</span>
+            </button>
+            <button class="type-filter-btn" data-type="Instant" title="Instants">
+              <i class="ms ms-instant"></i>
+              <span class="type-count" id="type-count-Instant">0</span>
+            </button>
+            <button class="type-filter-btn" data-type="Enchantment" title="Enchantments">
+              <i class="ms ms-enchantment"></i>
+              <span class="type-count" id="type-count-Enchantment">0</span>
+            </button>
+            <button class="type-filter-btn" data-type="Sorcery" title="Sorceries">
+              <i class="ms ms-sorcery"></i>
+              <span class="type-count" id="type-count-Sorcery">0</span>
+            </button>
+              <button class="type-filter-btn" data-type="Land" title="Lands">
+                <i class="ms ms-land"></i>
+                <span class="type-count" id="type-count-Land">0</span>
+              </button>
+            </div>
+          </div>
+          <div class="filter-divider"></div>
           <div class="view-toggle" id="view-toggle">
             <button class="view-btn active" data-view="list" title="List view">☰</button>
             <button class="view-btn" data-view="grid" title="Grid view">▦</button>
@@ -117,16 +154,16 @@
         <span class="stat-value" id="stat-cards">0</span>
       </div>
       <div class="stat">
-        <span class="stat-label">Unique:</span>
-        <span class="stat-value" id="stat-unique">0</span>
+        <span class="stat-label">SB:</span>
+        <span class="stat-value" id="zone-count-sideboard">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">MB:</span>
+        <span class="stat-value" id="zone-count-maybeboard">0</span>
       </div>
       <div class="stat">
         <span class="stat-label">Total:</span>
         <span class="stat-value stat-value-accent" id="stat-price">$0.00</span>
-      </div>
-      <div class="zone-counts">
-        <span class="zone-count" data-zone="sideboard" id="zone-count-sideboard">SB: 0</span>
-        <span class="zone-count" data-zone="maybeboard" id="zone-count-maybeboard">MB: 0</span>
       </div>
     </footer>
   </div>

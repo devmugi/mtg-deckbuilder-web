@@ -371,39 +371,6 @@
 .color-swatch--G { background: var(--mtg-green); }
 .color-swatch--C { background: var(--mtg-colorless); }
 
-/* Type Breakdown */
-.type-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.type-breakdown-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 8px;
-  background: var(--bg-inset);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-}
-
-.type-name {
-  color: var(--text-secondary);
-}
-
-.type-count {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.type-breakdown-empty {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-  text-align: center;
-  padding: var(--space-sm);
-}
-
 /* ==========================================================================
    ZONE TABS
    ========================================================================== */
@@ -463,27 +430,6 @@
   background: var(--bg-raised);
   border-color: var(--accent);
   color: var(--accent);
-}
-
-/* ==========================================================================
-   ZONE COUNTS
-   ========================================================================== */
-
-.zone-counts {
-  display: flex;
-  gap: var(--space-md);
-  margin-left: auto;
-}
-
-.zone-count {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: color var(--transition-fast);
-}
-
-.zone-count:hover {
-  color: var(--text-secondary);
 }
 
 /* ==========================================================================
@@ -584,56 +530,110 @@
 
 .filter-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-md);
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-inset);
+  border-radius: var(--radius-md);
   margin-bottom: var(--space-sm);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding-left: 2px;
 }
 
 .color-filters {
   display: flex;
-  gap: 2px;
+  gap: var(--space-sm);
 }
 
 .color-filter {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
+  border: none;
+  border-radius: 50%;
   cursor: pointer;
   transition: all var(--transition-fast);
-  opacity: 0.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.color-filter img {
+  width: 28px;
+  height: 28px;
+}
+
+.color-filter:not(.active) {
+  opacity: 0.35;
+  filter: grayscale(0.5);
 }
 
 .color-filter.active {
   opacity: 1;
-  border-color: currentColor;
 }
 
-.color-filter[data-color="W"] { background: var(--mtg-white); color: #333; }
-.color-filter[data-color="U"] { background: var(--mtg-blue); color: #fff; }
-.color-filter[data-color="B"] { background: var(--mtg-black); color: #fff; }
-.color-filter[data-color="R"] { background: var(--mtg-red); color: #fff; }
-.color-filter[data-color="G"] { background: var(--mtg-green); color: #fff; }
-.color-filter[data-color="C"] { background: var(--mtg-colorless); color: #fff; }
+/* Scryfall SVGs have built-in colors, no background needed */
 
-.type-filter {
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--bg-inset);
-  border: 1px solid var(--border-subtle);
+.filter-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-subtle);
+  margin: 0 var(--space-xs);
+}
+
+.type-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.type-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  background: transparent;
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
   cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0.7;
 }
 
-.type-filter:focus {
-  outline: none;
+.type-filter-btn .ms {
+  font-size: 16px;
+}
+
+.type-filter-btn .type-count {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.type-filter-btn.active {
+  opacity: 1;
+  color: var(--text-primary);
+  background: var(--bg-raised);
   border-color: var(--accent);
+}
+
+.type-filter-btn:hover {
+  opacity: 1;
+  background: var(--bg-raised);
 }
 
 .view-toggle {

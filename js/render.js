@@ -90,33 +90,32 @@ export function renderDeck(cards, zone, handlers) {
     const price = card.prices.usd
       ? `$${(parseFloat(card.prices.usd) * quantity).toFixed(2)}`
       : '—';
+    const shortType = getShortType(card.typeLine);
 
     return `
       <div class="deck-card" data-card-id="${card.id}">
         <img
           class="deck-card-thumb"
-          src="${card.images.small}"
+          src="${card.images.artCrop}"
           alt=""
           loading="lazy"
         >
         <div class="deck-card-info">
           <div class="deck-card-name">${escapeHtml(card.name)}</div>
-          <div class="deck-card-type">${escapeHtml(card.typeLine)}</div>
+          <div class="deck-card-type">${escapeHtml(shortType)}</div>
         </div>
         <div class="deck-card-mana">${renderManaCost(card.manaCost)}</div>
-        <div class="deck-card-quantity">
+        <div class="deck-card-price">${price}</div>
+        <div class="deck-card-controls">
           <button class="btn btn-primary btn-sm qty-minus" data-card-id="${card.id}">−</button>
           <span class="deck-card-qty-value">${quantity}</span>
           <button class="btn btn-primary btn-sm qty-plus" data-card-id="${card.id}">+</button>
-        </div>
-        <div class="move-controls">
           ${moveTargets.map(target => `
             <button class="btn-move" data-target="${target}" title="Move to ${target}">
               ${moveLabels[target]}
             </button>
           `).join('')}
         </div>
-        <div class="deck-card-price">${price}</div>
         <div class="deck-card-actions">
           <button class="btn btn-primary btn-sm delete-card" data-card-id="${card.id}" title="Remove">✕</button>
         </div>
@@ -216,11 +215,19 @@ export function renderGrid(cards, handlers) {
 }
 
 /**
- * Render mana cost symbols (simplified)
+ * Render mana cost as Scryfall symbol images
  */
 function renderManaCost(manaCost) {
   if (!manaCost) return '';
-  return `<span class="badge">${escapeHtml(manaCost)}</span>`;
+
+  // Parse mana symbols like {4}{R}{R} or {2}{G}{G}
+  const symbols = manaCost.match(/\{[^}]+\}/g) || [];
+
+  return symbols.map(symbol => {
+    // Remove braces and format for Scryfall URL
+    const code = symbol.slice(1, -1).replace('/', '');
+    return `<img class="mana-symbol" src="https://svgs.scryfall.io/card-symbols/${encodeURIComponent(code)}.svg" alt="${symbol}">`;
+  }).join('');
 }
 
 /**
@@ -230,6 +237,22 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+/**
+ * Extract short type from full type line
+ * e.g., "Legendary Creature — Warrior" → "Creature"
+ */
+function getShortType(typeLine) {
+  if (!typeLine) return '';
+  // Remove the subtype part (after em dash)
+  const mainType = typeLine.split('—')[0].trim();
+  // Extract primary card type
+  const types = ['Creature', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Planeswalker', 'Land'];
+  for (const type of types) {
+    if (mainType.includes(type)) return type;
+  }
+  return mainType;
 }
 
 /**
@@ -317,36 +340,28 @@ export function renderColorPie(colors) {
 }
 
 /**
- * Render type breakdown
+ * Update type counts in filter bar
  * @param {Object} types - Type counts { Creature, Instant, Sorcery, ... }
  */
 export function renderTypeBreakdown(types) {
-  const container = document.getElementById('type-breakdown');
-  if (!container) return;
+  const typeOrder = ['Planeswalker', 'Creature', 'Artifact', 'Instant', 'Enchantment', 'Sorcery', 'Land'];
 
-  const typeOrder = ['Creature', 'Instant', 'Sorcery', 'Artifact', 'Enchantment', 'Planeswalker', 'Land'];
-
-  const items = typeOrder
-    .filter(type => types[type] > 0)
-    .map(type => `
-      <div class="type-breakdown-item">
-        <span class="type-name">${type}</span>
-        <span class="type-count">${types[type]}</span>
-      </div>
-    `)
-    .join('');
-
-  container.innerHTML = items || '<div class="type-breakdown-empty">No cards</div>';
+  typeOrder.forEach(type => {
+    const countEl = document.getElementById(`type-count-${type}`);
+    if (countEl) {
+      countEl.textContent = types[type] || 0;
+    }
+  });
 }
 
 /**
- * Render zone counts for sideboard and maybeboard tabs
+ * Render zone counts for sideboard and maybeboard
  * @param {number} sideboardCount - Number of cards in sideboard
  * @param {number} maybeboardCount - Number of cards in maybeboard
  */
 export function renderZoneCounts(sideboardCount, maybeboardCount) {
   const sbEl = document.getElementById('zone-count-sideboard');
   const mbEl = document.getElementById('zone-count-maybeboard');
-  if (sbEl) sbEl.textContent = `SB: ${sideboardCount}`;
-  if (mbEl) mbEl.textContent = `MB: ${maybeboardCount}`;
+  if (sbEl) sbEl.textContent = sideboardCount;
+  if (mbEl) mbEl.textContent = maybeboardCount;
 }

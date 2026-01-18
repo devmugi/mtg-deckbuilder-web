@@ -201,6 +201,10 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-xs);
+  align-content: start;
 }
 
 .deck-empty {
@@ -227,10 +231,10 @@ body {
 
 .deck-card {
   display: grid;
-  grid-template-columns: 48px 1fr auto auto auto;
+  grid-template-columns: 60px 1fr auto auto auto auto;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md) var(--space-xs) var(--space-sm);
   border-radius: var(--radius-md);
   transition: background-color var(--transition-fast);
 }
@@ -240,14 +244,15 @@ body {
 }
 
 .deck-card-thumb {
-  width: 48px;
-  height: 36px;
+  width: 60px;
+  height: 44px;
   object-fit: cover;
   border-radius: var(--radius-sm);
 }
 
 .deck-card-info {
   min-width: 0;
+  overflow: hidden;
 }
 
 .deck-card-name {
@@ -260,12 +265,19 @@ body {
 
 .deck-card-type {
   font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .deck-card-mana {
   display: flex;
   gap: 2px;
+  align-items: center;
+}
+
+.mana-symbol {
+  width: 18px;
+  height: 18px;
 }
 
 .deck-card-quantity {
@@ -280,10 +292,16 @@ body {
   font-weight: 500;
 }
 
+.deck-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .deck-card-price {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  min-width: 60px;
+  width: 70px;
   text-align: right;
 }
 

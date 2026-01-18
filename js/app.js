@@ -20,8 +20,8 @@ let currentPreviewCard = null;
 let commanderCard = null;
 let currentZone = 'deck';
 let filterState = {
-  colors: ['W', 'U', 'B', 'R', 'G', 'C'],
-  type: '',
+  colors: ['W', 'U', 'B', 'R', 'G', 'C'],  // Selected colors (AND logic)
+  type: '',  // Single type filter, empty = show all
   view: 'list'
 };
 let isLoading = false;
@@ -70,14 +70,31 @@ function switchZone(zone) {
  * @returns {Array} Filtered cards
  */
 function filterCards(cards) {
-  return cards.filter(({ card }) => {
-    // Color filter
-    const cardColors = card.colors || [];
-    const matchesColor = cardColors.length === 0
-      ? filterState.colors.includes('C')
-      : cardColors.some(c => filterState.colors.includes(c));
+  const allColors = ['W', 'U', 'B', 'R', 'G', 'C'];
+  const allColorsSelected = allColors.every(c => filterState.colors.includes(c));
 
-    // Type filter
+  return cards.filter(({ card }) => {
+    // Color filter - if all colors selected, show all cards
+    let matchesColor = true;
+
+    if (!allColorsSelected) {
+      const cardColors = card.colors || [];
+      const selectedColors = filterState.colors.filter(c => c !== 'C');
+      const colorlessSelected = filterState.colors.includes('C');
+
+      if (cardColors.length === 0) {
+        // Colorless card - only show if C is selected
+        matchesColor = colorlessSelected;
+      } else if (selectedColors.length === 0) {
+        // Only C selected, hide colored cards
+        matchesColor = false;
+      } else {
+        // Card must have at least one of the selected colors
+        matchesColor = cardColors.some(c => selectedColors.includes(c));
+      }
+    }
+
+    // Type filter - single type, empty = show all
     const matchesType = !filterState.type ||
       (card.typeLine && card.typeLine.includes(filterState.type));
 
@@ -473,7 +490,7 @@ function initImportExport() {
  */
 function initFilters() {
   const colorFilters = document.getElementById('color-filters');
-  const typeFilter = document.getElementById('type-filter');
+  const typeFilters = document.getElementById('type-filters');
   const viewToggle = document.getElementById('view-toggle');
 
   // Color filter clicks
@@ -494,9 +511,25 @@ function initFilters() {
     renderCurrentZone(deckData);
   });
 
-  // Type filter change
-  typeFilter?.addEventListener('change', (e) => {
-    filterState.type = e.target.value;
+  // Type filter clicks (single-select)
+  typeFilters?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.type-filter-btn');
+    if (!btn) return;
+
+    const type = btn.dataset.type;
+
+    // If clicking the already selected type, deselect it (show all)
+    if (filterState.type === type) {
+      filterState.type = '';
+      btn.classList.remove('active');
+    } else {
+      // Deselect all, then select clicked one
+      filterState.type = type;
+      typeFilters.querySelectorAll('.type-filter-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.type === type);
+      });
+    }
+
     const deckData = getDeck();
     renderCurrentZone(deckData);
   });
