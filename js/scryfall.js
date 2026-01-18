@@ -52,6 +52,48 @@ export async function autocomplete(query) {
 }
 
 /**
+ * Search for cards using the search endpoint
+ * @param {string} query - Search query
+ * @param {string[]} colorIdentity - Optional color identity filter (e.g., ['W', 'U', 'B', 'R', 'G'])
+ * @returns {Promise<Object[]>} - Array of normalized cards
+ */
+export async function searchCards(query, colorIdentity = null) {
+  if (!query || query.length < 2) {
+    return [];
+  }
+
+  try {
+    let searchQuery = `${query}`;
+
+    // Add color identity filter if provided
+    if (colorIdentity && colorIdentity.length > 0) {
+      const colors = colorIdentity.join('');
+      searchQuery += ` id<=${colors}`;
+    }
+
+    const data = await rateLimitedFetch(
+      `${SCRYFALL_API}/cards/search?q=${encodeURIComponent(searchQuery)}&order=name`
+    );
+
+    // Normalize and cache each card
+    const cards = (data.data || []).slice(0, 10).map(card => {
+      const normalized = normalizeCard(card);
+      cardCache.set(card.name.toLowerCase(), normalized);
+      return normalized;
+    });
+
+    return cards;
+  } catch (error) {
+    // Search returns 404 when no results found
+    if (error.message.includes('404')) {
+      return [];
+    }
+    console.error('Search error:', error);
+    return [];
+  }
+}
+
+/**
  * Fetch a card by exact name
  */
 export async function fetchCardByName(name) {
