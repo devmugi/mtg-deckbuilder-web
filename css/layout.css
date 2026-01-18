@@ -322,10 +322,53 @@ body {
 .bottombar {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
+  justify-content: space-between;
   padding: var(--space-sm) var(--space-lg);
   background: var(--bg-inset);
   border-top: 1px solid var(--border-subtle);
+}
+
+.bottombar-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.bottombar-author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.bottombar-author a {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.bottombar-author a:hover {
+  color: var(--accent);
+}
+
+.bottombar-credits {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.bottombar-credits a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.bottombar-credits a:hover {
+  color: var(--accent);
 }
 
 .stat {
