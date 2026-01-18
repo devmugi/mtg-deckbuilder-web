@@ -235,6 +235,11 @@
   color: var(--accent);
 }
 
+.search-filter-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 .search-filter-icon {
   width: 16px;
   height: 16px;
@@ -282,7 +287,7 @@
 }
 
 .search-result-item.color-mismatch {
-  border-left-color: var(--color-danger, #e53935);
+  border-left-color: var(--error);
   opacity: 0.7;
 }
 
