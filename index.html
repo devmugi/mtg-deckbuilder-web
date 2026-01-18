@@ -68,6 +68,31 @@
           </div>
         </div>
 
+        <div class="filter-bar" id="filter-bar">
+          <div class="color-filters" id="color-filters">
+            <button class="color-filter active" data-color="W" title="White">W</button>
+            <button class="color-filter active" data-color="U" title="Blue">U</button>
+            <button class="color-filter active" data-color="B" title="Black">B</button>
+            <button class="color-filter active" data-color="R" title="Red">R</button>
+            <button class="color-filter active" data-color="G" title="Green">G</button>
+            <button class="color-filter active" data-color="C" title="Colorless">C</button>
+          </div>
+          <select class="type-filter" id="type-filter">
+            <option value="">All Types</option>
+            <option value="Creature">Creature</option>
+            <option value="Instant">Instant</option>
+            <option value="Sorcery">Sorcery</option>
+            <option value="Artifact">Artifact</option>
+            <option value="Enchantment">Enchantment</option>
+            <option value="Planeswalker">Planeswalker</option>
+            <option value="Land">Land</option>
+          </select>
+          <div class="view-toggle" id="view-toggle">
+            <button class="view-btn active" data-view="list" title="List view">☰</button>
+            <button class="view-btn" data-view="grid" title="Grid view">▦</button>
+          </div>
+        </div>
+
         <div class="deck-list" id="deck-list">
           <div class="deck-empty" id="deck-empty">
             <svg class="deck-empty-icon" viewBox="0 0 64 64" fill="currentColor">
