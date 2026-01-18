@@ -634,21 +634,31 @@ body {
   .deck-card-type {
     grid-column: 2;
     grid-row: 2;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
   }
 
   .deck-card-quantity {
-    grid-column: 3;
+    grid-column: 2;
     grid-row: 2;
     justify-self: end;
   }
 
   .deck-card-controls .btn {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .deck-card-actions {
-    display: none;
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  .deck-card-actions .btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
