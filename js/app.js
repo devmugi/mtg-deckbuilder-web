@@ -3,7 +3,7 @@
  */
 
 import { initSearch, setDeckColors } from './search.js';
-import { initRender, renderPreview, renderDeck, renderSplitView, renderManaCurve, renderColorPie, renderTypeBreakdown, renderZoneCounts } from './render.js';
+import { initRender, renderPreview, renderDeck, renderDeckSkeleton, updateSkeletonCard, renderSplitView, renderManaCurve, renderColorPie, renderTypeBreakdown, renderZoneCounts } from './render.js';
 import {
   addCard, removeCard, subscribe, getDeck, setDeck,
   isModified, getCurrentPrecon,
@@ -39,6 +39,44 @@ let currentLoadId = 0; // Track current load operation to cancel previous
  * Mobile tab navigation state
  */
 let currentMobileTab = 'deck';
+
+/**
+ * Mana color to CSS color mapping for commander gradient
+ */
+const MANA_COLORS = {
+  W: '#F8F6D8',  // White (cream)
+  U: '#0E68AB',  // Blue
+  B: '#393939',  // Black
+  R: '#D3202A',  // Red
+  G: '#00733E'   // Green
+};
+
+/**
+ * Generate CSS gradient from commander's color identity
+ * @param {string[]} colorIdentity - Array of color codes (W, U, B, R, G)
+ * @returns {string} CSS gradient string
+ */
+function generateCommanderGradient(colorIdentity) {
+  if (!colorIdentity || colorIdentity.length === 0) {
+    return 'var(--accent)'; // Colorless - use accent color
+  }
+
+  // Map colors to CSS values
+  const cssColors = colorIdentity
+    .filter(c => MANA_COLORS[c])
+    .map(c => MANA_COLORS[c]);
+
+  if (cssColors.length === 0) {
+    return 'var(--accent)';
+  }
+
+  if (cssColors.length === 1) {
+    return cssColors[0];
+  }
+
+  // Create gradient with all colors
+  return `linear-gradient(90deg, ${cssColors.join(', ')})`;
+}
 
 /**
  * Setup mobile tab navigation
@@ -288,7 +326,7 @@ function openCardModal(card, zone = 'deck') {
   const actionsEl = document.getElementById('card-modal-actions');
 
   // Populate content
-  const imageUrl = card.imageUris?.normal || card.imageUris?.small || '';
+  const imageUrl = card.images?.normal || card.images?.small || '';
   imageContainer.innerHTML = imageUrl ? `<img src="${imageUrl}" alt="${card.name}">` : '';
   nameEl.textContent = card.name;
   typeEl.textContent = card.typeLine || '';
@@ -452,7 +490,8 @@ function renderCurrentZone(deckData) {
         removeCardFromZone(cardId, targetZone);
       }
     },
-    onMove: handleMove
+    onMove: handleMove,
+    onCardClick: (card, zone) => openCardModal(card, zone)
   };
 
   // No boards selected - show mainboard only in 2 columns
@@ -832,7 +871,7 @@ function initDeckSelector() {
 }
 
 /**
- * Load a precon deck progressively
+ * Load a precon deck with progressive skeleton loading
  */
 async function loadPreconDeck(deckId) {
   const precon = getPreconById(deckId);
@@ -847,7 +886,7 @@ async function loadPreconDeck(deckId) {
   setDeck([], null);
   commanderCard = null;
   renderPreview(null);
-  setDeckColors([]); // Clear search filter colors
+  setDeckColors([]);
 
   // Get all card lists
   const mainboardNames = precon.cards || [];
@@ -855,62 +894,148 @@ async function loadPreconDeck(deckId) {
   const maybeboardNames = precon.maybeboard || [];
   const totalCards = mainboardNames.length + sideboardNames.length + maybeboardNames.length;
 
+  if (mainboardNames.length === 0) return;
+
   // Start loading
   isLoading = true;
   loadingIndicator.classList.remove('hidden');
   loadingProgress.textContent = `0/${totalCards}`;
 
-  const batchSize = 10;
+  // Phase 1: Fetch commander first (first card in list)
+  const commanderName = mainboardNames[0];
+  const [commanderData] = await fetchCardsBatch([commanderName]);
+
+  if (thisLoadId !== currentLoadId) return;
+
+  if (commanderData) {
+    commanderCard = commanderData;
+    renderPreview(commanderData);
+    setDeckColors(commanderData.colorIdentity || []);
+  }
+
+  // Phase 2: Generate gradient and render skeleton immediately
+  const gradient = commanderData
+    ? generateCommanderGradient(commanderData.colorIdentity)
+    : 'var(--accent)';
+
+  // Create handlers for skeleton cards
+  const handlers = {
+    onPreview: (card) => handlePreview(card),
+    onAdd: (card) => addCardToZone(card, 'deck'),
+    onRemove: (cardId, zone, deleteAll) => {
+      if (deleteAll) {
+        deleteCard(cardId, 'deck');
+      } else {
+        removeCardFromZone(cardId, 'deck');
+      }
+    },
+    onCardClick: (card, zone) => openCardModal(card, zone),
+    onMenuOpen: (card, zone, buttonEl) => openCardActionMenu(card, zone, buttonEl)
+  };
+
+  // Render skeleton with all card names
+  renderDeckSkeleton(mainboardNames, gradient, handlers);
+
+  // Track loaded cards and quantities
   const loadedCards = [];
-  let loadedCount = 0;
+  const cardQuantities = {};
+  mainboardNames.forEach(name => {
+    cardQuantities[name] = (cardQuantities[name] || 0) + 1;
+  });
+  const uniqueNames = [...new Set(mainboardNames)];
 
-  // Helper to load cards in batches
-  async function loadCardBatches(cardNames, zone) {
-    for (let i = 0; i < cardNames.length; i += batchSize) {
-      if (thisLoadId !== currentLoadId) return null;
+  // Update commander card if it was first
+  if (commanderData) {
+    loadedCards.push(commanderData);
+    updateSkeletonCard(commanderName, commanderData, cardQuantities[commanderName], 'deck', handlers);
+  }
 
-      const batch = cardNames.slice(i, i + batchSize);
+  let loadedCount = commanderData ? 1 : 0;
+  loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+
+  // Phase 3: Load remaining cards in batches
+  const batchSize = 70;
+  const remainingNames = uniqueNames
+    .filter(name => name !== commanderName)
+    .sort((a, b) => a.localeCompare(b));
+
+  for (let i = 0; i < remainingNames.length; i += batchSize) {
+    if (thisLoadId !== currentLoadId) return;
+
+    const batch = remainingNames.slice(i, i + batchSize);
+    const cards = await fetchCardsBatch(batch);
+
+    if (thisLoadId !== currentLoadId) return;
+
+    // Update each skeleton card with fetched data (no re-render)
+    for (const card of cards) {
+      loadedCards.push(card);
+      const quantity = cardQuantities[card.name] || 1;
+      updateSkeletonCard(card.name, card, quantity, 'deck', handlers);
+      loadedCount++;
+      loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+    }
+  }
+
+  // Set deck state once after all mainboard cards are loaded
+  setDeck(loadedCards, deckId);
+
+  // Load sideboard (dedupe names, track quantities)
+  if (sideboardNames.length > 0) {
+    const sideboardQuantities = {};
+    sideboardNames.forEach(name => {
+      sideboardQuantities[name] = (sideboardQuantities[name] || 0) + 1;
+    });
+    const uniqueSideboardNames = [...new Set(sideboardNames)];
+
+    for (let i = 0; i < uniqueSideboardNames.length; i += batchSize) {
+      if (thisLoadId !== currentLoadId) return;
+
+      const batch = uniqueSideboardNames.slice(i, i + batchSize);
       const cards = await fetchCardsBatch(batch);
 
-      if (thisLoadId !== currentLoadId) return null;
+      if (thisLoadId !== currentLoadId) return;
 
-      // Add cards to appropriate zone
       for (const card of cards) {
-        if (zone === 'deck') {
-          loadedCards.push(card);
-        } else {
-          addCardToZone(card, zone);
+        const qty = sideboardQuantities[card.name] || 1;
+        for (let j = 0; j < qty; j++) {
+          addCardToZone(card, 'sideboard');
         }
+        loadedCount += qty;
       }
-
-      loadedCount += cards.length;
       loadingProgress.textContent = `${loadedCount}/${totalCards}`;
-
-      // Update main deck display
-      if (zone === 'deck') {
-        setDeck(loadedCards, deckId);
-      }
     }
-    return true;
   }
 
-  // Load mainboard
-  if (await loadCardBatches(mainboardNames, 'deck') === null) return;
-
-  // Load sideboard
-  if (sideboardNames.length > 0) {
-    if (await loadCardBatches(sideboardNames, 'sideboard') === null) return;
-  }
-
-  // Load maybeboard
+  // Load maybeboard (dedupe names, track quantities)
   if (maybeboardNames.length > 0) {
-    if (await loadCardBatches(maybeboardNames, 'maybeboard') === null) return;
+    const maybeboardQuantities = {};
+    maybeboardNames.forEach(name => {
+      maybeboardQuantities[name] = (maybeboardQuantities[name] || 0) + 1;
+    });
+    const uniqueMaybeboardNames = [...new Set(maybeboardNames)];
+
+    for (let i = 0; i < uniqueMaybeboardNames.length; i += batchSize) {
+      if (thisLoadId !== currentLoadId) return;
+
+      const batch = uniqueMaybeboardNames.slice(i, i + batchSize);
+      const cards = await fetchCardsBatch(batch);
+
+      if (thisLoadId !== currentLoadId) return;
+
+      for (const card of cards) {
+        const qty = maybeboardQuantities[card.name] || 1;
+        for (let j = 0; j < qty; j++) {
+          addCardToZone(card, 'maybeboard');
+        }
+        loadedCount += qty;
+      }
+      loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+    }
   }
 
   // Final check before completing
-  if (thisLoadId !== currentLoadId) {
-    return;
-  }
+  if (thisLoadId !== currentLoadId) return;
 
   // Done loading
   isLoading = false;
@@ -924,21 +1049,10 @@ async function loadPreconDeck(deckId) {
   }
   toastMsg += ')';
   showToast(toastMsg);
-
-  // Set commander (first card with "Legendary" in type, or first card)
-  const commander = loadedCards.find(c =>
-    c.typeLine && c.typeLine.includes('Legendary')
-  ) || loadedCards[0];
-  if (commander) {
-    commanderCard = commander;
-    renderPreview(commander);
-    // Set deck colors for search filter
-    setDeckColors(commander.colorIdentity || []);
-  }
 }
 
 /**
- * Load a saved deck from localStorage
+ * Load a saved deck with progressive skeleton loading
  */
 async function loadSavedDeck(deckId) {
   const savedDeck = getSavedDeckById(deckId);
@@ -969,52 +1083,147 @@ async function loadSavedDeck(deckId) {
   const maybeboardNames = savedDeck.maybeboard || [];
   const totalCards = mainboardNames.length + sideboardNames.length + maybeboardNames.length;
 
+  if (mainboardNames.length === 0) return;
+
   // Start loading
   isLoading = true;
   loadingIndicator.classList.remove('hidden');
   loadingProgress.textContent = `0/${totalCards}`;
 
-  const batchSize = 10;
+  // Phase 1: Fetch commander first (first card in list)
+  const commanderName = mainboardNames[0];
+  const [commanderData] = await fetchCardsBatch([commanderName]);
+
+  if (thisLoadId !== currentLoadId) return;
+
+  if (commanderData) {
+    commanderCard = commanderData;
+    renderPreview(commanderData);
+    setDeckColors(commanderData.colorIdentity || []);
+  }
+
+  // Phase 2: Generate gradient and render skeleton immediately
+  const gradient = commanderData
+    ? generateCommanderGradient(commanderData.colorIdentity)
+    : 'var(--accent)';
+
+  // Create handlers for skeleton cards
+  const handlers = {
+    onPreview: (card) => handlePreview(card),
+    onAdd: (card) => addCardToZone(card, 'deck'),
+    onRemove: (cardId, zone, deleteAll) => {
+      if (deleteAll) {
+        deleteCard(cardId, 'deck');
+      } else {
+        removeCardFromZone(cardId, 'deck');
+      }
+    },
+    onCardClick: (card, zone) => openCardModal(card, zone),
+    onMenuOpen: (card, zone, buttonEl) => openCardActionMenu(card, zone, buttonEl)
+  };
+
+  // Render skeleton with all card names
+  renderDeckSkeleton(mainboardNames, gradient, handlers);
+
+  // Track loaded cards and quantities
   const loadedCards = [];
-  let loadedCount = 0;
+  const cardQuantities = {};
+  mainboardNames.forEach(name => {
+    cardQuantities[name] = (cardQuantities[name] || 0) + 1;
+  });
+  const uniqueNames = [...new Set(mainboardNames)];
 
-  // Helper to load cards in batches
-  async function loadCardBatches(cardNames, zone) {
-    for (let i = 0; i < cardNames.length; i += batchSize) {
-      if (thisLoadId !== currentLoadId) return null;
+  // Update commander card if it was first
+  if (commanderData) {
+    loadedCards.push(commanderData);
+    updateSkeletonCard(commanderName, commanderData, cardQuantities[commanderName], 'deck', handlers);
+  }
 
-      const batch = cardNames.slice(i, i + batchSize);
+  let loadedCount = commanderData ? 1 : 0;
+  loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+
+  // Phase 3: Load remaining cards in batches
+  const batchSize = 70;
+  const remainingNames = uniqueNames
+    .filter(name => name !== commanderName)
+    .sort((a, b) => a.localeCompare(b));
+
+  for (let i = 0; i < remainingNames.length; i += batchSize) {
+    if (thisLoadId !== currentLoadId) return;
+
+    const batch = remainingNames.slice(i, i + batchSize);
+    const cards = await fetchCardsBatch(batch);
+
+    if (thisLoadId !== currentLoadId) return;
+
+    // Update each skeleton card with fetched data (no re-render)
+    for (const card of cards) {
+      loadedCards.push(card);
+      const quantity = cardQuantities[card.name] || 1;
+      updateSkeletonCard(card.name, card, quantity, 'deck', handlers);
+      loadedCount++;
+      loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+    }
+  }
+
+  // Set deck state once after all mainboard cards are loaded
+  setDeck(loadedCards, deckId);
+
+  // Load sideboard (dedupe names, track quantities)
+  if (sideboardNames.length > 0) {
+    const sideboardQuantities = {};
+    sideboardNames.forEach(name => {
+      sideboardQuantities[name] = (sideboardQuantities[name] || 0) + 1;
+    });
+    const uniqueSideboardNames = [...new Set(sideboardNames)];
+
+    for (let i = 0; i < uniqueSideboardNames.length; i += batchSize) {
+      if (thisLoadId !== currentLoadId) return;
+
+      const batch = uniqueSideboardNames.slice(i, i + batchSize);
       const cards = await fetchCardsBatch(batch);
 
-      if (thisLoadId !== currentLoadId) return null;
+      if (thisLoadId !== currentLoadId) return;
 
       for (const card of cards) {
-        if (zone === 'deck') {
-          loadedCards.push(card);
-        } else {
-          addCardToZone(card, zone);
+        const qty = sideboardQuantities[card.name] || 1;
+        for (let j = 0; j < qty; j++) {
+          addCardToZone(card, 'sideboard');
         }
+        loadedCount += qty;
       }
-
-      loadedCount += cards.length;
       loadingProgress.textContent = `${loadedCount}/${totalCards}`;
-
-      if (zone === 'deck') {
-        setDeck(loadedCards, deckId);
-      }
     }
-    return true;
   }
 
-  // Load all zones
-  if (await loadCardBatches(mainboardNames, 'deck') === null) return;
-  if (sideboardNames.length > 0) {
-    if (await loadCardBatches(sideboardNames, 'sideboard') === null) return;
-  }
+  // Load maybeboard (dedupe names, track quantities)
   if (maybeboardNames.length > 0) {
-    if (await loadCardBatches(maybeboardNames, 'maybeboard') === null) return;
+    const maybeboardQuantities = {};
+    maybeboardNames.forEach(name => {
+      maybeboardQuantities[name] = (maybeboardQuantities[name] || 0) + 1;
+    });
+    const uniqueMaybeboardNames = [...new Set(maybeboardNames)];
+
+    for (let i = 0; i < uniqueMaybeboardNames.length; i += batchSize) {
+      if (thisLoadId !== currentLoadId) return;
+
+      const batch = uniqueMaybeboardNames.slice(i, i + batchSize);
+      const cards = await fetchCardsBatch(batch);
+
+      if (thisLoadId !== currentLoadId) return;
+
+      for (const card of cards) {
+        const qty = maybeboardQuantities[card.name] || 1;
+        for (let j = 0; j < qty; j++) {
+          addCardToZone(card, 'maybeboard');
+        }
+        loadedCount += qty;
+      }
+      loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+    }
   }
 
+  // Final check before completing
   if (thisLoadId !== currentLoadId) return;
 
   // Done loading
@@ -1029,16 +1238,6 @@ async function loadSavedDeck(deckId) {
   }
   toastMsg += ')';
   showToast(toastMsg);
-
-  // Set commander
-  const commander = loadedCards.find(c =>
-    c.typeLine && c.typeLine.includes('Legendary')
-  ) || loadedCards[0];
-  if (commander) {
-    commanderCard = commander;
-    renderPreview(commander);
-    setDeckColors(commander.colorIdentity || []);
-  }
 }
 
 /**
@@ -1181,7 +1380,7 @@ async function importDeck() {
   const cardMap = new Map();
 
   // Fetch in batches
-  const batchSize = 10;
+  const batchSize = 70;
   for (let i = 0; i < uniqueNames.length; i += batchSize) {
     // Check for cancellation
     if (thisLoadId !== currentLoadId) return;

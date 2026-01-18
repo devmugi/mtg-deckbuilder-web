@@ -349,13 +349,65 @@ body {
 .deck-card-price {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  width: 70px;
+  width: 48px;
   text-align: right;
 }
 
 .deck-card-actions {
   display: flex;
   gap: var(--space-xs);
+}
+
+/* ==========================================================================
+   DECK CARD LOADING STATE
+   ========================================================================== */
+
+.deck-card.loading {
+  position: relative;
+}
+
+.deck-card.loading::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--commander-gradient, var(--accent));
+  background-size: 200% 100%;
+  animation: commander-progress 1.5s linear infinite;
+}
+
+@keyframes commander-progress {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Skeleton placeholder for loading cards */
+.deck-card-thumb-placeholder {
+  width: 60px;
+  height: 44px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-inset) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-inset) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.deck-card-type-placeholder {
+  width: 80px;
+  height: 12px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 /* ==========================================================================
@@ -747,8 +799,9 @@ body {
     flex-shrink: 0;
     font-size: 11px;
     color: var(--text-muted);
-    min-width: 40px;
+    width: 48px;
     text-align: right;
+    margin-left: -10px;
   }
 
   /* Hide inline controls and menu button on mobile */
