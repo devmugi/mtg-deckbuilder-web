@@ -509,6 +509,48 @@ body {
     padding: var(--space-sm);
   }
 
+  /* Mobile Topbar */
+  .topbar {
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .logo span {
+    display: none;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .search-container {
+    display: none;
+  }
+
+  .topbar-actions {
+    gap: var(--space-sm);
+  }
+
+  .topbar-actions .btn {
+    display: none;
+  }
+
+  .deck-selector {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .deck-selector-button {
+    max-width: 100%;
+  }
+
+  .deck-selector-button .deck-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* Mobile Bottom Tabs */
   .mobile-tabs {
     position: fixed;
