@@ -2,27 +2,23 @@
  * DOM rendering functions
  */
 
-import { removeCard, addCard, deleteCard } from './deck.js';
-
 let previewContainer;
 let deckList;
 let deckEmpty;
 let statCards;
 let statUnique;
 let statPrice;
-let onPreviewCallback = null;
 
 /**
  * Initialize render module
  */
-export function initRender(onPreview) {
+export function initRender() {
   previewContainer = document.getElementById('card-preview');
   deckList = document.getElementById('deck-list');
   deckEmpty = document.getElementById('deck-empty');
   statCards = document.getElementById('stat-cards');
   statUnique = document.getElementById('stat-unique');
   statPrice = document.getElementById('stat-price');
-  onPreviewCallback = onPreview;
 }
 
 /**
@@ -59,14 +55,19 @@ export function renderPreview(card) {
 
 /**
  * Render deck list
+ * @param {Array} cards - Array of card entries with card and quantity
+ * @param {string} zone - Current zone ('deck', 'sideboard', 'maybeboard')
+ * @param {Object} handlers - Event handlers { onPreview, onAdd, onRemove, onMove }
  */
-export function renderDeck(deckData) {
-  const { cards, stats } = deckData;
+export function renderDeck(cards, zone, handlers) {
+  // Determine move targets based on current zone
+  const moveTargets = {
+    deck: ['sideboard', 'maybeboard'],
+    sideboard: ['deck', 'maybeboard'],
+    maybeboard: ['deck', 'sideboard']
+  }[zone] || [];
 
-  // Update stats
-  statCards.textContent = stats.totalCards;
-  statUnique.textContent = stats.uniqueCards;
-  statPrice.textContent = `$${stats.totalPrice.toFixed(2)}`;
+  const moveLabels = { deck: 'D', sideboard: 'S', maybeboard: 'M' };
 
   // Show/hide empty state
   if (cards.length === 0) {
@@ -107,6 +108,13 @@ export function renderDeck(deckData) {
           <span class="deck-card-qty-value">${quantity}</span>
           <button class="btn btn-primary btn-sm qty-plus" data-card-id="${card.id}">+</button>
         </div>
+        <div class="move-controls">
+          ${moveTargets.map(target => `
+            <button class="btn-move" data-target="${target}" title="Move to ${target}">
+              ${moveLabels[target]}
+            </button>
+          `).join('')}
+        </div>
         <div class="deck-card-price">${price}</div>
         <div class="deck-card-actions">
           <button class="btn btn-primary btn-sm delete-card" data-card-id="${card.id}" title="Remove">✕</button>
@@ -120,37 +128,40 @@ export function renderDeck(deckData) {
   existingCards.forEach(el => el.remove());
   deckList.insertAdjacentHTML('beforeend', cardRows);
 
-  // Add event listeners
-  deckList.querySelectorAll('.qty-minus').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      removeCard(btn.dataset.cardId);
-    });
-  });
+  // Add event listeners for each card row
+  deckList.querySelectorAll('.deck-card').forEach(row => {
+    const cardId = row.dataset.cardId;
+    const cardEntry = cards.find(c => c.card.id === cardId);
 
-  deckList.querySelectorAll('.qty-plus').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    // Quantity minus
+    row.querySelector('.qty-minus').addEventListener('click', (e) => {
       e.stopPropagation();
-      const cardEntry = cards.find(c => c.card.id === btn.dataset.cardId);
+      handlers.onRemove(cardId);
+    });
+
+    // Quantity plus
+    row.querySelector('.qty-plus').addEventListener('click', (e) => {
+      e.stopPropagation();
       if (cardEntry) {
-        addCard(cardEntry.card);
+        handlers.onAdd(cardEntry.card);
       }
     });
-  });
 
-  deckList.querySelectorAll('.delete-card').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    // Delete card
+    row.querySelector('.delete-card').addEventListener('click', (e) => {
       e.stopPropagation();
-      deleteCard(btn.dataset.cardId);
+      handlers.onRemove(cardId, true); // true = delete all
     });
-  });
 
-  // Hover preview
-  deckList.querySelectorAll('.deck-card').forEach(row => {
+    // Move buttons
+    row.querySelectorAll('.btn-move').forEach(btn => {
+      btn.addEventListener('click', () => handlers.onMove(cardId, zone, btn.dataset.target));
+    });
+
+    // Hover preview
     row.addEventListener('mouseenter', () => {
-      const cardEntry = cards.find(c => c.card.id === row.dataset.cardId);
-      if (cardEntry && onPreviewCallback) {
-        onPreviewCallback(cardEntry.card);
+      if (cardEntry && handlers.onPreview) {
+        handlers.onPreview(cardEntry.card);
       }
     });
   });
@@ -255,4 +266,16 @@ export function renderColorPie(colors) {
     .join('');
 
   legend.innerHTML = legendItems;
+}
+
+/**
+ * Render zone counts for sideboard and maybeboard tabs
+ * @param {number} sideboardCount - Number of cards in sideboard
+ * @param {number} maybeboardCount - Number of cards in maybeboard
+ */
+export function renderZoneCounts(sideboardCount, maybeboardCount) {
+  const sbEl = document.getElementById('zone-count-sideboard');
+  const mbEl = document.getElementById('zone-count-maybeboard');
+  if (sbEl) sbEl.textContent = `SB: ${sideboardCount}`;
+  if (mbEl) mbEl.textContent = `MB: ${maybeboardCount}`;
 }
