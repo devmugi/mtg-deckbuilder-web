@@ -261,9 +261,7 @@ function updateCardActionMenuQty() {
   const qtyEl = document.getElementById('card-action-menu-qty');
   if (!qtyEl || !cardActionMenuCard) return;
 
-  const zoneData = cardActionMenuZone === 'deck' ? deckState.deck :
-                   cardActionMenuZone === 'sideboard' ? deckState.sideboard :
-                   deckState.maybeboard;
+  const zoneData = getZone(cardActionMenuZone);
   const entry = zoneData.find(c => c.card.id === cardActionMenuCard.id);
   qtyEl.textContent = entry ? entry.quantity : 0;
 
