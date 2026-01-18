@@ -236,6 +236,7 @@ async function loadPreconDeck(deckId) {
   // Done loading
   isLoading = false;
   loadingIndicator.classList.add('hidden');
+  showToast(`${precon.name} loaded (${loadedCards.length} cards)`);
 }
 
 /**
