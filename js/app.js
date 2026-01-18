@@ -359,6 +359,40 @@ async function importDeck() {
 }
 
 /**
+ * Show a toast notification
+ * @param {string} message - Message to display
+ */
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('visible');
+
+  setTimeout(() => {
+    toast.classList.remove('visible');
+  }, 2000);
+}
+
+/**
+ * Export deck to clipboard
+ */
+async function exportDeck() {
+  const text = formatDeckList();
+
+  if (!text.trim()) {
+    showToast('Nothing to export');
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Copied to clipboard!');
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    alert('Failed to copy to clipboard');
+  }
+}
+
+/**
  * Initialize application
  */
 function init() {
