@@ -544,3 +544,132 @@
 .toast.visible {
   opacity: 1;
 }
+
+/* ==========================================================================
+   FILTER BAR
+   ========================================================================== */
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-sm);
+}
+
+.color-filters {
+  display: flex;
+  gap: 2px;
+}
+
+.color-filter {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  opacity: 0.4;
+}
+
+.color-filter.active {
+  opacity: 1;
+  border-color: currentColor;
+}
+
+.color-filter[data-color="W"] { background: var(--mtg-white); color: #333; }
+.color-filter[data-color="U"] { background: var(--mtg-blue); color: #fff; }
+.color-filter[data-color="B"] { background: var(--mtg-black); color: #fff; }
+.color-filter[data-color="R"] { background: var(--mtg-red); color: #fff; }
+.color-filter[data-color="G"] { background: var(--mtg-green); color: #fff; }
+.color-filter[data-color="C"] { background: var(--mtg-colorless); color: #fff; }
+
+.type-filter {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.type-filter:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.view-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.view-btn:hover {
+  color: var(--text-primary);
+}
+
+.view-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-base);
+}
+
+/* ==========================================================================
+   GRID VIEW
+   ========================================================================== */
+
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--space-sm);
+}
+
+.grid-card {
+  position: relative;
+  aspect-ratio: 488 / 680;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.grid-card:hover {
+  transform: scale(1.05);
+  z-index: 1;
+}
+
+.grid-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grid-card-qty {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
