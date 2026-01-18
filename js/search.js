@@ -13,6 +13,7 @@ let dropdown;
 let filterToggle;
 let filterColors;
 let searchFilters;
+let searchSpinner;
 let debounceTimer = null;
 let currentResults = [];
 let activeIndex = -1;
@@ -21,6 +22,9 @@ let onPreviewCallback = null;
 // Deck color state
 let deckColorIdentity = [];
 let deckFilterEnabled = false;
+
+// Pending selection while card data is loading
+let pendingSelectionIndex = -1;
 
 /**
  * Initialize search component
@@ -31,6 +35,7 @@ export function initSearch(onPreview) {
   filterToggle = document.getElementById('search-filter-toggle');
   filterColors = document.getElementById('search-filter-colors');
   searchFilters = document.getElementById('search-filters');
+  searchSpinner = document.getElementById('search-spinner');
   onPreviewCallback = onPreview;
 
   if (!searchInput || !dropdown) {
@@ -63,10 +68,7 @@ export function initSearch(onPreview) {
       e.preventDefault();
       e.stopPropagation();
       const index = parseInt(item.dataset.index, 10);
-      const card = currentResults[index];
-      if (card) {
-        selectCard(card);
-      }
+      selectCardByIndex(index);
     }
   });
 
@@ -130,6 +132,23 @@ function toggleDeckFilter() {
 }
 
 /**
+ * Show/hide search spinner
+ */
+function showSpinner() {
+  if (searchSpinner) {
+    searchSpinner.classList.remove('hidden');
+    searchInput?.classList.add('loading');
+  }
+}
+
+function hideSpinner() {
+  if (searchSpinner) {
+    searchSpinner.classList.add('hidden');
+    searchInput?.classList.remove('loading');
+  }
+}
+
+/**
  * Handle input changes with debounce
  */
 function handleInput(e) {
@@ -144,6 +163,7 @@ function handleInput(e) {
     return;
   }
 
+  showSpinner();
   debounceTimer = setTimeout(() => {
     runSearch(query);
   }, DEBOUNCE_MS);
@@ -154,27 +174,117 @@ function handleInput(e) {
  */
 async function runSearch(query) {
   try {
-    let cards;
-
     if (deckFilterEnabled && deckColorIdentity.length > 0) {
-      // Use search endpoint with color identity filter
-      cards = await searchCards(query, deckColorIdentity);
+      // Use search endpoint with color identity filter - full data in one call
+      const cards = await searchCards(query, deckColorIdentity);
+      currentResults = cards;
+      activeIndex = -1;
+      renderRichDropdown(cards);
     } else {
-      // Use autocomplete + batch fetch for full card data
+      // Progressive loading: show names first, then fetch details
       const names = await autocomplete(query);
-      if (names.length > 0) {
-        cards = await fetchCardsBatch(names.slice(0, 10));
-      } else {
-        cards = [];
+      if (names.length === 0) {
+        hideDropdown();
+        return;
       }
-    }
 
-    currentResults = cards;
-    activeIndex = -1;
-    renderRichDropdown(cards);
+      // Show skeleton items with names immediately
+      const limitedNames = names.slice(0, 10);
+      currentResults = limitedNames.map(name => ({ name, loading: true }));
+      activeIndex = -1;
+      renderSkeletonDropdown(limitedNames);
+      hideSpinner();
+
+      // Fetch full card data and update progressively
+      const cards = await fetchCardsBatch(limitedNames);
+      currentResults = cards;
+      updateDropdownWithCards(cards);
+    }
   } catch (error) {
     console.error('Search failed:', error);
     hideDropdown();
+  }
+}
+
+/**
+ * Render skeleton dropdown with just card names
+ */
+function renderSkeletonDropdown(names) {
+  dropdown.innerHTML = names.map((name, index) => `
+    <div class="search-result-item" data-index="${index}" data-name="${escapeHtml(name)}">
+      <div class="search-result-item-art shimmer"></div>
+      <div class="search-result-item-info">
+        <div class="search-result-item-name">${escapeHtml(name)}</div>
+        <div class="search-result-item-type shimmer-text"></div>
+      </div>
+      <div class="search-result-item-mana">
+        <div class="shimmer-mana"></div>
+      </div>
+      <div class="search-result-item-price shimmer-text"></div>
+    </div>
+  `).join('');
+
+  dropdown.classList.remove('hidden');
+}
+
+/**
+ * Update dropdown items with full card data
+ */
+function updateDropdownWithCards(cards) {
+  const items = dropdown.querySelectorAll('.search-result-item');
+
+  cards.forEach((card, index) => {
+    const item = items[index];
+    if (!item) return;
+
+    const mismatchClass = !deckFilterEnabled && deckColorIdentity.length > 0 && !cardFitsColorIdentity(card, deckColorIdentity)
+      ? 'color-mismatch'
+      : '';
+
+    if (mismatchClass) {
+      item.classList.add('color-mismatch');
+    }
+
+    // Update art
+    const artEl = item.querySelector('.search-result-item-art');
+    if (artEl) {
+      const image = card.images.artCrop || card.images.small || '';
+      if (image) {
+        const img = document.createElement('img');
+        img.className = 'search-result-item-art';
+        img.src = image;
+        img.alt = '';
+        img.loading = 'lazy';
+        artEl.replaceWith(img);
+      } else {
+        artEl.classList.remove('shimmer');
+      }
+    }
+
+    // Update type
+    const typeEl = item.querySelector('.search-result-item-type');
+    if (typeEl) {
+      typeEl.textContent = card.typeLine || '';
+      typeEl.classList.remove('shimmer-text');
+    }
+
+    // Update mana
+    const manaEl = item.querySelector('.search-result-item-mana');
+    if (manaEl) {
+      manaEl.innerHTML = renderManaCost(card.manaCost);
+    }
+
+    // Update price
+    const priceEl = item.querySelector('.search-result-item-price');
+    if (priceEl) {
+      priceEl.textContent = card.prices.usd ? `$${card.prices.usd}` : '';
+      priceEl.classList.remove('shimmer-text');
+    }
+  });
+
+  // Process pending selection if user clicked while loading
+  if (pendingSelectionIndex >= 0 && cards[pendingSelectionIndex]) {
+    selectCard(cards[pendingSelectionIndex]);
   }
 }
 
@@ -208,6 +318,7 @@ function renderRichDropdown(cards) {
     `;
   }).join('');
 
+  hideSpinner();
   dropdown.classList.remove('hidden');
 }
 
@@ -267,7 +378,7 @@ function handleKeydown(e) {
     case 'Enter':
       e.preventDefault();
       if (activeIndex >= 0) {
-        selectCard(currentResults[activeIndex]);
+        selectCardByIndex(activeIndex);
       }
       break;
 
@@ -288,24 +399,40 @@ function updateActiveItem() {
 }
 
 /**
- * Select a card from results
+ * Select a card by index - queues selection if card is still loading
+ */
+function selectCardByIndex(index) {
+  const card = currentResults[index];
+  if (!card) return;
+
+  // If card is fully loaded, select it immediately
+  if (card.id) {
+    selectCard(card);
+  } else {
+    // Card still loading - queue selection for when data arrives
+    pendingSelectionIndex = index;
+  }
+}
+
+/**
+ * Select a card from results (card must be fully loaded)
  */
 function selectCard(card) {
+  if (!card || !card.id) return;
+
+  pendingSelectionIndex = -1;
   hideDropdown();
   searchInput.value = '';
-
-  if (card) {
-    addCard(card);
-    if (onPreviewCallback) {
-      onPreviewCallback(card);
-    }
-
-    // Show toast with undo action
-    showToast(`Added ${card.name}`, {
-      label: 'Undo',
-      callback: () => deleteCard(card.id)
-    });
+  addCard(card);
+  if (onPreviewCallback) {
+    onPreviewCallback(card);
   }
+
+  // Show toast with undo action
+  showToast(`Added ${card.name}`, {
+    label: 'Undo',
+    callback: () => deleteCard(card.id)
+  });
 }
 
 /**
@@ -313,8 +440,10 @@ function selectCard(card) {
  */
 function hideDropdown() {
   dropdown.classList.add('hidden');
+  hideSpinner();
   currentResults = [];
   activeIndex = -1;
+  pendingSelectionIndex = -1;
 }
 
 /**

@@ -123,10 +123,8 @@ export function renderDeck(cards, zone, handlers) {
     `;
   }).join('');
 
-  // Update DOM
-  const existingCards = deckList.querySelectorAll('.deck-card');
-  existingCards.forEach(el => el.remove());
-  deckList.insertAdjacentHTML('beforeend', cardRows);
+  // Update DOM - use innerHTML to clear any previous layout (including split view headers)
+  deckList.innerHTML = cardRows;
 
   // Add event listeners for each card row
   deckList.querySelectorAll('.deck-card').forEach(row => {
@@ -176,6 +174,13 @@ export function renderDeck(cards, zone, handlers) {
       }
     });
 
+    // Mobile tap to open card modal
+    row.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768 && cardEntry && handlers.onCardClick) {
+        handlers.onCardClick(cardEntry.card, zone);
+      }
+    });
+
     // Mobile menu button
     const menuBtn = row.querySelector('.deck-card-menu-btn');
     if (menuBtn) {
@@ -187,6 +192,184 @@ export function renderDeck(cards, zone, handlers) {
       });
     }
   });
+}
+
+/**
+ * Render deck skeleton with card names in loading state
+ * @param {Array} cardNames - Array of card names to display
+ * @param {string} commanderGradient - CSS gradient for progress line
+ * @param {Object} handlers - Event handlers { onPreview }
+ */
+export function renderDeckSkeleton(cardNames, commanderGradient, handlers) {
+  // Show/hide empty state
+  if (cardNames.length === 0) {
+    deckEmpty.classList.remove('hidden');
+    const existingCards = deckList.querySelectorAll('.deck-card');
+    existingCards.forEach(el => el.remove());
+    return;
+  }
+
+  deckEmpty.classList.add('hidden');
+
+  // Set commander gradient CSS variable on the deck list
+  if (commanderGradient) {
+    deckList.style.setProperty('--commander-gradient', commanderGradient);
+  }
+
+  // Sort by name
+  const sortedNames = [...cardNames].sort((a, b) => a.localeCompare(b));
+
+  // Render skeleton card rows
+  const cardRows = sortedNames.map(name => `
+    <div class="deck-card loading" data-card-name="${escapeHtml(name)}">
+      <div class="deck-card-thumb-placeholder"></div>
+      <div class="deck-card-info">
+        <div class="deck-card-name">${escapeHtml(name)}</div>
+        <div class="deck-card-type deck-card-type-placeholder"></div>
+      </div>
+      <div class="deck-card-mana"></div>
+      <div class="deck-card-price"></div>
+      <div class="deck-card-controls" style="visibility: hidden;">
+        <button class="btn btn-primary btn-sm qty-minus">−</button>
+        <span class="deck-card-qty-value">1</span>
+        <button class="btn btn-primary btn-sm qty-plus">+</button>
+      </div>
+      <div class="deck-card-actions" style="visibility: hidden;">
+        <button class="btn btn-primary btn-sm delete-card" title="Remove">✕</button>
+      </div>
+      <button class="deck-card-menu-btn" aria-label="Card actions" style="visibility: hidden;">⋮</button>
+    </div>
+  `).join('');
+
+  // Update DOM
+  const existingCards = deckList.querySelectorAll('.deck-card');
+  existingCards.forEach(el => el.remove());
+  deckList.insertAdjacentHTML('beforeend', cardRows);
+}
+
+/**
+ * Update a single skeleton card row with loaded data
+ * @param {string} cardName - Name of the card to update
+ * @param {Object} card - Full card data
+ * @param {number} quantity - Card quantity
+ * @param {string} zone - Current zone
+ * @param {Object} handlers - Event handlers
+ */
+export function updateSkeletonCard(cardName, card, quantity, zone, handlers) {
+  // Find the skeleton row by name
+  const row = deckList.querySelector(`.deck-card[data-card-name="${CSS.escape(cardName)}"]`);
+  if (!row) return;
+
+  // Update data attributes
+  row.dataset.cardId = card.id;
+  row.classList.remove('loading');
+
+  // Update thumbnail
+  const thumbPlaceholder = row.querySelector('.deck-card-thumb-placeholder');
+  if (thumbPlaceholder) {
+    const img = document.createElement('img');
+    img.className = 'deck-card-thumb';
+    img.src = card.images.artCrop;
+    img.alt = '';
+    img.loading = 'lazy';
+    thumbPlaceholder.replaceWith(img);
+  }
+
+  // Update type line
+  const typeEl = row.querySelector('.deck-card-type');
+  if (typeEl) {
+    typeEl.textContent = card.typeLine || '';
+    typeEl.classList.remove('deck-card-type-placeholder');
+  }
+
+  // Update mana cost
+  const manaEl = row.querySelector('.deck-card-mana');
+  if (manaEl) {
+    manaEl.innerHTML = renderManaCost(card.manaCost);
+  }
+
+  // Update price
+  const priceEl = row.querySelector('.deck-card-price');
+  if (priceEl) {
+    const price = card.prices.usd
+      ? `$${(parseFloat(card.prices.usd) * quantity).toFixed(2)}`
+      : '—';
+    priceEl.textContent = price;
+  }
+
+  // Update quantity
+  const qtyEl = row.querySelector('.deck-card-qty-value');
+  if (qtyEl) {
+    qtyEl.textContent = quantity;
+  }
+
+  // Show controls
+  const controls = row.querySelector('.deck-card-controls');
+  const actions = row.querySelector('.deck-card-actions');
+  const menuBtn = row.querySelector('.deck-card-menu-btn');
+  if (controls) controls.style.visibility = '';
+  if (actions) actions.style.visibility = '';
+  if (menuBtn) menuBtn.style.visibility = '';
+
+  // Set up event handlers
+  const minusBtn = row.querySelector('.qty-minus');
+  const plusBtn = row.querySelector('.qty-plus');
+  const deleteBtn = row.querySelector('.delete-card');
+
+  if (minusBtn) {
+    minusBtn.dataset.cardId = card.id;
+    minusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (quantity === 1) {
+        row.classList.add('removing');
+        row.addEventListener('animationend', () => {
+          handlers.onRemove?.(card.id, zone);
+        }, { once: true });
+      } else {
+        handlers.onRemove?.(card.id, zone);
+      }
+    });
+  }
+
+  if (plusBtn) {
+    plusBtn.dataset.cardId = card.id;
+    plusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handlers.onAdd?.(card);
+    });
+  }
+
+  if (deleteBtn) {
+    deleteBtn.dataset.cardId = card.id;
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      row.classList.add('removing');
+      row.addEventListener('animationend', () => {
+        handlers.onRemove?.(card.id, zone, true);
+      }, { once: true });
+    });
+  }
+
+  // Hover preview
+  row.addEventListener('mouseenter', () => {
+    handlers.onPreview?.(card);
+  });
+
+  // Mobile tap to open card modal
+  row.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && handlers.onCardClick) {
+      handlers.onCardClick(card, zone);
+    }
+  });
+
+  // Mobile menu button
+  if (menuBtn) {
+    menuBtn.dataset.cardId = card.id;
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handlers.onMenuOpen?.(card, zone, menuBtn);
+    });
+  }
 }
 
 /**
@@ -496,6 +679,13 @@ export function renderSplitView(data, handlers) {
     // Hover preview
     row.addEventListener('mouseenter', () => {
       handlers.onPreview?.(cardEntry.card);
+    });
+
+    // Mobile tap to open card modal
+    row.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768 && cardEntry && handlers.onCardClick) {
+        handlers.onCardClick(cardEntry.card, zone);
+      }
     });
 
     // Mobile menu button
