@@ -77,7 +77,10 @@ function updateMobileTabContent() {
   if (mainPanel) mainPanel.style.display = '';
   if (leftPanel) leftPanel.style.display = '';
   if (filterBar) filterBar.style.display = '';
-  if (searchContainer) searchContainer.style.display = '';
+  if (searchContainer) {
+    searchContainer.style.display = '';
+    searchContainer.classList.remove('mobile-visible');
+  }
 
   // Only apply on mobile
   if (window.innerWidth > 768) return;
@@ -90,7 +93,10 @@ function updateMobileTabContent() {
     case 'search':
       if (leftPanel) leftPanel.style.display = 'none';
       if (filterBar) filterBar.style.display = 'none';
-      if (searchContainer) searchContainer.style.display = 'block';
+      if (searchContainer) {
+        searchContainer.style.display = 'block';
+        searchContainer.classList.add('mobile-visible');
+      }
       break;
     case 'stats':
       if (mainPanel) mainPanel.style.display = 'none';

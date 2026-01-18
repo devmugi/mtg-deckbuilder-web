@@ -652,6 +652,31 @@ body {
     min-width: 44px;
     min-height: 44px;
   }
+
+  /* Mobile Search Tab */
+  .search-container.mobile-visible {
+    display: block;
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 56px;
+    padding: var(--space-md);
+    background: var(--bg-base);
+    z-index: 50;
+    overflow-y: auto;
+  }
+
+  .search-container.mobile-visible .search-input-wrapper {
+    margin-bottom: var(--space-md);
+  }
+
+  .search-container.mobile-visible .dropdown {
+    position: static;
+    max-height: none;
+    box-shadow: none;
+    border: 1px solid var(--border-subtle);
+  }
 }
 
 /* ==========================================================================
