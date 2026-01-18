@@ -472,3 +472,40 @@ body {
   padding: var(--space-md);
   text-align: center;
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVE (≤768px)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Hide desktop-only elements */
+  .left-panel {
+    display: none;
+  }
+
+  .bottombar {
+    display: none;
+  }
+
+  /* Single column layout */
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+
+  /* Full height main panel */
+  .main-panel {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  /* Make room for bottom tabs */
+  .app {
+    padding-bottom: 56px;
+  }
+
+  /* Deck list mobile grid */
+  .deck-list {
+    grid-template-columns: 1fr;
+    padding: var(--space-sm);
+  }
+}
