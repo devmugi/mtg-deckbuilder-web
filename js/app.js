@@ -7,11 +7,13 @@ import { initRender, renderPreview, renderDeck, renderSplitView, renderManaCurve
 import {
   addCard, removeCard, subscribe, getDeck, setDeck,
   isModified, getCurrentPrecon,
-  addCardToZone, removeCardFromZone, moveCard, getZone, getZoneStats, clearAllZones
+  addCardToZone, removeCardFromZone, moveCard, getZone, getZoneStats, clearAllZones, deleteCard
 } from './deck.js';
 import { calculateManaCurve, calculateColorDistribution, calculateTypeDistribution } from './stats.js';
 import { getAllPrecons, getPreconById } from './precons.js';
 import { fetchCardsBatch } from './scryfall.js';
+import { getSavedDecks, saveDeck, deleteSavedDeck, getSavedDeckById } from './storage.js';
+import { showToast } from './toast.js';
 
 /**
  * Current preview card state
@@ -94,13 +96,7 @@ function renderCurrentZone(deckData) {
     onRemove: (cardId, zone, deleteAll) => {
       const targetZone = zone || 'deck';
       if (deleteAll) {
-        const zoneCards = getZone(targetZone);
-        const entry = zoneCards.find(e => e.card.id === cardId);
-        if (entry) {
-          for (let i = 0; i < entry.quantity; i++) {
-            removeCardFromZone(cardId, targetZone);
-          }
-        }
+        deleteCard(cardId, targetZone);
       } else {
         removeCardFromZone(cardId, targetZone);
       }
@@ -220,14 +216,27 @@ function getCompletionClass(count) {
  */
 async function populateDeckSelector() {
   const precons = getAllPrecons();
+  const savedDecks = getSavedDecks();
+
+  // Combine saved decks (first) and precons for rendering
+  const allDecks = [
+    ...savedDecks.map(d => ({
+      id: d.id,
+      name: d.name,
+      commander: d.commander,
+      cardCount: d.cards.length,
+      isSaved: true
+    })),
+    ...precons.map(d => ({ ...d, isSaved: false }))
+  ];
 
   // Render placeholder items first
-  renderDeckSelectorItems(precons);
+  renderDeckSelectorItems(allDecks);
 
   // Get unique commander names that aren't cached
-  const commanderNames = precons
+  const commanderNames = allDecks
     .map(d => d.commander)
-    .filter(name => !commanderCache[name]);
+    .filter(name => name && !commanderCache[name]);
 
   if (commanderNames.length === 0) return;
 
@@ -252,7 +261,7 @@ async function populateDeckSelector() {
         };
       }
       // Re-render with fetched data
-      renderDeckSelectorItems(precons);
+      renderDeckSelectorItems(allDecks);
       // Update selected deck button if one is selected
       if (selectedDeckId) {
         updateSelectedDeckButton(selectedDeckId);
@@ -266,7 +275,7 @@ async function populateDeckSelector() {
 /**
  * Render deck selector dropdown items
  */
-function renderDeckSelectorItems(precons) {
+function renderDeckSelectorItems(decks) {
   // Import action as first item
   const importAction = `
     <div class="deck-selector-action" id="deck-import-action">
@@ -279,12 +288,12 @@ function renderDeckSelectorItems(precons) {
     </div>
   `;
 
-  const deckItems = precons.map(deck => {
+  const deckItems = decks.map(deck => {
     const cached = commanderCache[deck.commander];
     const completionClass = getCompletionClass(deck.cardCount);
 
     return `
-      <div class="deck-selector-item" data-deck-id="${deck.id}">
+      <div class="deck-selector-item${deck.isSaved ? ' deck-selector-item--saved' : ''}" data-deck-id="${deck.id}" data-is-saved="${deck.isSaved}">
         <div class="deck-selector-item-art-container">
           ${cached?.artCrop
             ? `<img class="deck-selector-item-art" src="${cached.artCrop}" alt="" loading="lazy">`
@@ -301,6 +310,13 @@ function renderDeckSelectorItems(precons) {
           </div>
           <span class="deck-completion ${completionClass}">${deck.cardCount}/100</span>
         </div>
+        ${deck.isSaved ? `
+          <button class="deck-selector-item-delete" data-deck-id="${deck.id}" title="Delete deck">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        ` : ''}
       </div>
     `;
   }).join('');
@@ -315,9 +331,34 @@ function renderDeckSelectorItems(precons) {
 
   // Add deck click handlers
   deckSelectorDropdown.querySelectorAll('.deck-selector-item').forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (e) => {
+      // Don't select deck if clicking delete button
+      if (e.target.closest('.deck-selector-item-delete')) return;
+
       const deckId = item.dataset.deckId;
-      selectDeck(deckId);
+      const isSaved = item.dataset.isSaved === 'true';
+      if (isSaved) {
+        loadSavedDeck(deckId);
+      } else {
+        selectDeck(deckId);
+      }
+    });
+  });
+
+  // Add delete handlers for saved decks
+  deckSelectorDropdown.querySelectorAll('.deck-selector-item-delete').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const deckId = btn.dataset.deckId;
+      if (confirm('Delete this saved deck?')) {
+        deleteSavedDeck(deckId);
+        if (selectedDeckId === deckId) {
+          selectedDeckId = null;
+          deckSelectorButton.innerHTML = '<span class="deck-selector-placeholder">Select a deck...</span>';
+        }
+        await populateDeckSelector();
+        showToast('Deck deleted');
+      }
     });
   });
 }
@@ -326,11 +367,16 @@ function renderDeckSelectorItems(precons) {
  * Update the selected deck button display
  */
 function updateSelectedDeckButton(deckId) {
+  // Try precon first, then saved deck
   const precon = getPreconById(deckId);
-  if (!precon) return;
+  const savedDeck = !precon ? getSavedDeckById(deckId) : null;
+  const deck = precon || savedDeck;
 
-  const cached = commanderCache[precon.commander];
-  const cardCount = precon.cards.length;
+  if (!deck) return;
+
+  const commanderName = precon?.commander || savedDeck?.commander;
+  const cached = commanderCache[commanderName];
+  const cardCount = precon?.cards?.length || savedDeck?.cards?.length || 0;
   const completionClass = getCompletionClass(cardCount);
 
   deckSelectorButton.innerHTML = `
@@ -339,7 +385,7 @@ function updateSelectedDeckButton(deckId) {
         ? `<img class="deck-selector-selected-art" src="${cached.artCrop}" alt="">`
         : `<div class="deck-selector-selected-art-placeholder"></div>`
       }
-      <span class="deck-selector-selected-name">${precon.name}</span>
+      <span class="deck-selector-selected-name">${deck.name}</span>
     </div>
     <span class="deck-completion ${completionClass}">${cardCount}/100</span>
   `;
@@ -532,6 +578,109 @@ async function loadPreconDeck(deckId) {
 }
 
 /**
+ * Load a saved deck from localStorage
+ */
+async function loadSavedDeck(deckId) {
+  const savedDeck = getSavedDeckById(deckId);
+  if (!savedDeck) return;
+
+  // Cancel any previous load
+  currentLoadId++;
+  const thisLoadId = currentLoadId;
+
+  // Store selected deck ID and close dropdown
+  selectedDeckId = deckId;
+  closeDeckSelector();
+
+  // Update button with selected deck
+  updateSelectedDeckButton(deckId);
+
+  // Clear deck and all zones
+  clearAllZones();
+  setDeck([], null);
+  commanderCard = null;
+  renderPreview(null);
+  setDeckColors([]);
+
+  // Get all card lists
+  const mainboardNames = savedDeck.cards || [];
+  const sideboardNames = savedDeck.sideboard || [];
+  const maybeboardNames = savedDeck.maybeboard || [];
+  const totalCards = mainboardNames.length + sideboardNames.length + maybeboardNames.length;
+
+  // Start loading
+  isLoading = true;
+  loadingIndicator.classList.remove('hidden');
+  loadingProgress.textContent = `0/${totalCards}`;
+
+  const batchSize = 10;
+  const loadedCards = [];
+  let loadedCount = 0;
+
+  // Helper to load cards in batches
+  async function loadCardBatches(cardNames, zone) {
+    for (let i = 0; i < cardNames.length; i += batchSize) {
+      if (thisLoadId !== currentLoadId) return null;
+
+      const batch = cardNames.slice(i, i + batchSize);
+      const cards = await fetchCardsBatch(batch);
+
+      if (thisLoadId !== currentLoadId) return null;
+
+      for (const card of cards) {
+        if (zone === 'deck') {
+          loadedCards.push(card);
+        } else {
+          addCardToZone(card, zone);
+        }
+      }
+
+      loadedCount += cards.length;
+      loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+
+      if (zone === 'deck') {
+        setDeck(loadedCards, deckId);
+      }
+    }
+    return true;
+  }
+
+  // Load all zones
+  if (await loadCardBatches(mainboardNames, 'deck') === null) return;
+  if (sideboardNames.length > 0) {
+    if (await loadCardBatches(sideboardNames, 'sideboard') === null) return;
+  }
+  if (maybeboardNames.length > 0) {
+    if (await loadCardBatches(maybeboardNames, 'maybeboard') === null) return;
+  }
+
+  if (thisLoadId !== currentLoadId) return;
+
+  // Done loading
+  isLoading = false;
+  loadingIndicator.classList.add('hidden');
+
+  const sbCount = sideboardNames.length;
+  const mbCount = maybeboardNames.length;
+  let toastMsg = `${savedDeck.name} loaded (${loadedCards.length} cards`;
+  if (sbCount > 0 || mbCount > 0) {
+    toastMsg += `, SB: ${sbCount}, MB: ${mbCount}`;
+  }
+  toastMsg += ')';
+  showToast(toastMsg);
+
+  // Set commander
+  const commander = loadedCards.find(c =>
+    c.typeLine && c.typeLine.includes('Legendary')
+  ) || loadedCards[0];
+  if (commander) {
+    commanderCard = commander;
+    renderPreview(commander);
+    setDeckColors(commander.colorIdentity || []);
+  }
+}
+
+/**
  * Parse deck list text into zones
  * @param {string} text - Deck list text
  * @returns {Object} { deck: [], sideboard: [], maybeboard: [] }
@@ -598,7 +747,9 @@ function formatDeckList() {
 function showImportModal() {
   const modal = document.getElementById('import-modal');
   const textarea = document.getElementById('import-textarea');
+  const nameInput = document.getElementById('import-deck-name');
   textarea.value = '';
+  if (nameInput) nameInput.value = '';
   modal.classList.remove('hidden');
   textarea.focus();
 }
@@ -616,6 +767,7 @@ function hideImportModal() {
  */
 async function importDeck() {
   const textarea = document.getElementById('import-textarea');
+  const nameInput = document.getElementById('import-deck-name');
   const text = textarea.value.trim();
 
   if (!text) {
@@ -635,24 +787,54 @@ async function importDeck() {
     return;
   }
 
+  // Get deck name (use first card name as default)
+  const firstCardName = parsed.deck[0]?.name || parsed.sideboard[0]?.name || parsed.maybeboard[0]?.name || 'Imported Deck';
+  const deckName = nameInput?.value.trim() || firstCardName;
+
+  // Cancel any previous load operation
+  currentLoadId++;
+  const thisLoadId = currentLoadId;
+
   hideImportModal();
   clearAllZones();
 
-  // Show loading
+  // Show loading in deck selector button
+  const uniqueNames = [...new Set(allCards.map(c => c.name))];
+  const totalUnique = uniqueNames.length;
+
+  function updateSelectorProgress(current) {
+    deckSelectorButton.innerHTML = `
+      <div class="deck-selector-selected">
+        <div class="deck-selector-loading-spinner"></div>
+        <span class="deck-selector-selected-name">Importing ${deckName}...</span>
+      </div>
+      <span class="deck-completion deck-completion-partial">${current}/${totalUnique}</span>
+    `;
+  }
+  updateSelectorProgress(0);
+
+  // Show loading indicator too
   loadingIndicator.classList.remove('hidden');
 
-  // Get unique card names
-  const uniqueNames = [...new Set(allCards.map(c => c.name))];
   const notFound = [];
   const cardMap = new Map();
 
   // Fetch in batches
   const batchSize = 10;
   for (let i = 0; i < uniqueNames.length; i += batchSize) {
+    // Check for cancellation
+    if (thisLoadId !== currentLoadId) return;
+
     const batch = uniqueNames.slice(i, i + batchSize);
-    loadingProgress.textContent = `${Math.min(i + batchSize, uniqueNames.length)}/${uniqueNames.length}`;
+    const progress = Math.min(i + batchSize, uniqueNames.length);
+    loadingProgress.textContent = `${progress}/${totalUnique}`;
+    updateSelectorProgress(progress);
 
     const cards = await fetchCardsBatch(batch);
+
+    // Check for cancellation after async operation
+    if (thisLoadId !== currentLoadId) return;
+
     cards.forEach(card => cardMap.set(card.name.toLowerCase(), card));
 
     // Check for not found
@@ -662,6 +844,9 @@ async function importDeck() {
       }
     });
   }
+
+  // Final cancellation check
+  if (thisLoadId !== currentLoadId) return;
 
   // Add cards to zones
   allCards.forEach(({ name, quantity, zone }) => {
@@ -675,25 +860,50 @@ async function importDeck() {
 
   loadingIndicator.classList.add('hidden');
 
+  // Determine commander (first legendary or first card)
+  const deckCards = getZone('deck');
+  const commander = deckCards.find(e =>
+    e.card.typeLine && e.card.typeLine.includes('Legendary')
+  )?.card || deckCards[0]?.card;
+
+  // Save deck to localStorage
+  const savedDeck = saveDeck({
+    name: deckName,
+    commander: commander?.name || firstCardName,
+    cards: parsed.deck.map(c => c.name),
+    sideboard: parsed.sideboard.map(c => c.name),
+    maybeboard: parsed.maybeboard.map(c => c.name)
+  });
+
+  // Cache commander data for deck selector display
+  if (commander) {
+    commanderCache[commander.name] = {
+      name: commander.name,
+      typeLine: commander.typeLine,
+      manaCost: commander.manaCost,
+      artCrop: commander.artCrop
+    };
+  }
+
+  // Update deck selector to show saved deck
+  selectedDeckId = savedDeck.id;
+  await populateDeckSelector();
+  updateSelectedDeckButton(savedDeck.id);
+
+  // Set commander for preview
+  if (commander) {
+    commanderCard = commander;
+    renderPreview(commander);
+    setDeckColors(commander.colorIdentity || []);
+  }
+
   // Report results
   const imported = allCards.length - notFound.length;
   if (notFound.length > 0) {
-    alert(`Imported ${imported} cards.\n\nNot found (${notFound.length}):\n${notFound.slice(0, 10).join('\n')}${notFound.length > 10 ? '\n...' : ''}`);
+    showToast(`Imported ${imported} cards. ${notFound.length} not found.`);
+  } else {
+    showToast(`${deckName} saved (${imported} cards)`);
   }
-}
-
-/**
- * Show a toast notification
- * @param {string} message - Message to display
- */
-function showToast(message) {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.classList.add('visible');
-
-  setTimeout(() => {
-    toast.classList.remove('visible');
-  }, 2000);
 }
 
 /**

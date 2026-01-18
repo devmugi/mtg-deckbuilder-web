@@ -3,7 +3,8 @@
  */
 
 import { autocomplete, fetchCardsBatch, searchCards } from './scryfall.js';
-import { addCard } from './deck.js';
+import { addCard, deleteCard } from './deck.js';
+import { showToast } from './toast.js';
 
 const DEBOUNCE_MS = 200;
 
@@ -298,6 +299,12 @@ function selectCard(card) {
     if (onPreviewCallback) {
       onPreviewCallback(card);
     }
+
+    // Show toast with undo action
+    showToast(`Added ${card.name}`, {
+      label: 'Undo',
+      callback: () => deleteCard(card.id)
+    });
   }
 }
 
