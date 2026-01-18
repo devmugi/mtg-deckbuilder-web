@@ -299,7 +299,7 @@ body {
 }
 
 .deck-card-info {
-  min-width: 0;
+  min-width: clamp(0px, 30%, 140px);  /* Responsive: shrinks when needed, expands when available */
   overflow: hidden;
 }
 
@@ -737,39 +737,25 @@ body {
   }
 
   .deck-card-mana {
-    display: none;
+    display: flex;
+    flex-shrink: 0;
+    font-size: 12px;
   }
 
   .deck-card-price {
-    display: none;
-  }
-
-  /* Hide inline controls on mobile, show menu button */
-  .deck-card-controls,
-  .deck-card-actions {
-    display: none;
-  }
-
-  .deck-card-menu-btn {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: var(--bg-hover);
-    border: none;
-    color: var(--text-primary);
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
+    display: block;
     flex-shrink: 0;
-    border-radius: var(--radius-sm);
-    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 40px;
+    text-align: right;
   }
 
-  .deck-card-menu-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+  /* Hide inline controls and menu button on mobile */
+  .deck-card-controls,
+  .deck-card-actions,
+  .deck-card-menu-btn {
+    display: none !important;
   }
 
   /* Card action popup menu */
@@ -893,5 +879,10 @@ body {
 @media (max-width: 768px) {
   .mobile-tabs {
     display: flex;
+  }
+
+  .card-modal.visible,
+  .card-modal-backdrop.visible {
+    display: block;
   }
 }
