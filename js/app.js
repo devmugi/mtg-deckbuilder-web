@@ -208,6 +208,67 @@ async function loadPreconDeck(deckId) {
 }
 
 /**
+ * Parse deck list text into zones
+ * @param {string} text - Deck list text
+ * @returns {Object} { deck: [], sideboard: [], maybeboard: [] }
+ */
+function parseDeckList(text) {
+  const lines = text.split('\n');
+  let currentZone = 'deck';
+  const result = { deck: [], sideboard: [], maybeboard: [] };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Check for zone headers
+    const lowerLine = trimmed.toLowerCase();
+    if (lowerLine.includes('sideboard')) {
+      currentZone = 'sideboard';
+      continue;
+    } else if (lowerLine.includes('maybeboard')) {
+      currentZone = 'maybeboard';
+      continue;
+    } else if (trimmed.startsWith('//')) {
+      continue; // Skip other comments
+    }
+
+    // Parse card line: "1 Card Name" or "1x Card Name" or just "Card Name"
+    const match = trimmed.match(/^(\d+)x?\s+(.+)$/i);
+    const quantity = match ? parseInt(match[1]) : 1;
+    const name = match ? match[2].trim() : trimmed;
+
+    result[currentZone].push({ name, quantity });
+  }
+
+  return result;
+}
+
+/**
+ * Format deck zones into text
+ * @returns {string} Formatted deck list
+ */
+function formatDeckList() {
+  const deck = getZone('deck');
+  const sideboard = getZone('sideboard');
+  const maybeboard = getZone('maybeboard');
+
+  let text = deck.map(e => `${e.quantity} ${e.card.name}`).join('\n');
+
+  if (sideboard.length > 0) {
+    text += '\n\n// Sideboard\n';
+    text += sideboard.map(e => `${e.quantity} ${e.card.name}`).join('\n');
+  }
+
+  if (maybeboard.length > 0) {
+    text += '\n\n// Maybeboard\n';
+    text += maybeboard.map(e => `${e.quantity} ${e.card.name}`).join('\n');
+  }
+
+  return text;
+}
+
+/**
  * Initialize application
  */
 function init() {
