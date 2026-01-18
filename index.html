@@ -193,20 +193,20 @@
 
     <!-- Mobile Bottom Tabs -->
     <nav class="mobile-tabs" id="mobile-tabs">
-      <button class="mobile-tab active" data-tab="deck">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+      <button class="mobile-tab active" data-tab="deck" aria-label="Deck tab">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24" aria-hidden="true">
           <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
         </svg>
         <span>Deck</span>
       </button>
-      <button class="mobile-tab" data-tab="search">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+      <button class="mobile-tab" data-tab="search" aria-label="Search tab">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24" aria-hidden="true">
           <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
         </svg>
         <span>Search</span>
       </button>
-      <button class="mobile-tab" data-tab="stats">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+      <button class="mobile-tab" data-tab="stats" aria-label="Stats tab">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24" aria-hidden="true">
           <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
         </svg>
         <span>Stats</span>
@@ -215,7 +215,7 @@
 
     <!-- Card Preview Modal -->
     <div class="card-modal-backdrop hidden" id="card-modal-backdrop"></div>
-    <div class="card-modal hidden" id="card-modal">
+    <div class="card-modal hidden" id="card-modal" role="dialog" aria-modal="true" aria-label="Card preview">
       <div class="card-modal-handle"></div>
       <div class="card-modal-image" id="card-modal-image"></div>
       <div class="card-modal-info">
