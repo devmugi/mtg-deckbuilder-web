@@ -474,7 +474,9 @@ body {
 }
 
 /* Hide mobile-only elements on desktop */
-.filter-toggle {
+.filter-toggle,
+.deck-card-menu-btn,
+.card-action-menu {
   display: none;
 }
 
@@ -740,39 +742,91 @@ body {
     display: none;
   }
 
-  .deck-card-controls {
+  /* Hide inline controls on mobile, show menu button */
+  .deck-card-controls,
+  .deck-card-actions {
+    display: none;
+  }
+
+  .deck-card-menu-btn {
     display: flex;
     align-items: center;
-    gap: 2px;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
     flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
   }
 
-  .deck-card-controls .btn {
-    min-width: 28px;
-    min-height: 28px;
-    padding: 0;
-    font-size: 14px;
+  .deck-card-menu-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
-  .deck-card-controls .deck-card-qty-value {
-    min-width: 20px;
+  /* Card action popup menu */
+  .card-action-menu {
+    position: fixed;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-xs);
+    z-index: 300;
+    box-shadow: var(--shadow-high);
+    min-width: 160px;
+  }
+
+  .card-action-menu.hidden {
+    display: none;
+  }
+
+  .card-action-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background: none;
+    border: none;
+    color: var(--text-primary);
     font-size: var(--font-size-sm);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    text-align: left;
   }
 
-  .deck-card-controls .btn-move {
+  .card-action-menu-item:hover {
+    background: var(--bg-hover);
+  }
+
+  .card-action-menu-item.danger {
+    color: var(--error);
+  }
+
+  .card-action-menu-qty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: var(--space-xs);
+  }
+
+  .card-action-menu-qty .btn {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .card-action-menu-qty-value {
     min-width: 24px;
-    min-height: 24px;
-    font-size: 10px;
-  }
-
-  .deck-card-actions {
-    flex-shrink: 0;
-  }
-
-  .deck-card-actions .btn {
-    min-width: 28px;
-    min-height: 28px;
-    padding: 0;
+    text-align: center;
+    font-weight: 600;
   }
 
   /* Mobile Search Tab */

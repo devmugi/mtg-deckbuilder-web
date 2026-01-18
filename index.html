@@ -230,6 +230,19 @@
       </div>
       <div class="card-modal-actions" id="card-modal-actions"></div>
     </div>
+
+    <!-- Card Action Menu (mobile) -->
+    <div class="card-action-menu hidden" id="card-action-menu">
+      <div class="card-action-menu-qty">
+        <button class="btn btn-secondary btn-sm" data-menu-action="minus">−</button>
+        <span class="card-action-menu-qty-value" id="card-action-menu-qty">1</span>
+        <button class="btn btn-secondary btn-sm" data-menu-action="plus">+</button>
+      </div>
+      <button class="card-action-menu-item" data-menu-action="sideboard">Move to Sideboard</button>
+      <button class="card-action-menu-item" data-menu-action="maybeboard">Move to Maybeboard</button>
+      <button class="card-action-menu-item" data-menu-action="main">Move to Main</button>
+      <button class="card-action-menu-item danger" data-menu-action="delete">Remove from Deck</button>
+    </div>
   </div>
 
   <div class="modal hidden" id="import-modal">

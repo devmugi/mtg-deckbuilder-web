@@ -118,6 +118,7 @@ export function renderDeck(cards, zone, handlers) {
         <div class="deck-card-actions">
           <button class="btn btn-primary btn-sm delete-card" data-card-id="${card.id}" title="Remove">✕</button>
         </div>
+        <button class="deck-card-menu-btn" data-card-id="${card.id}" aria-label="Card actions">⋮</button>
       </div>
     `;
   }).join('');
@@ -174,6 +175,17 @@ export function renderDeck(cards, zone, handlers) {
         handlers.onPreview(cardEntry.card);
       }
     });
+
+    // Mobile menu button
+    const menuBtn = row.querySelector('.deck-card-menu-btn');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (cardEntry && handlers.onMenuOpen) {
+          handlers.onMenuOpen(cardEntry.card, zone, menuBtn);
+        }
+      });
+    }
   });
 }
 

@@ -161,6 +161,119 @@ function setupMobileFilterCollapse() {
 }
 
 /**
+ * Card action menu state (mobile)
+ */
+let cardActionMenuCard = null;
+let cardActionMenuZone = null;
+
+/**
+ * Setup card action menu (mobile)
+ */
+function setupCardActionMenu() {
+  const menu = document.getElementById('card-action-menu');
+  if (!menu) return;
+
+  // Handle menu actions
+  menu.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-menu-action]');
+    if (!btn || !cardActionMenuCard) return;
+
+    const action = btn.dataset.menuAction;
+    const cardId = cardActionMenuCard.id;
+
+    switch (action) {
+      case 'minus':
+        removeCardFromZone(cardId, cardActionMenuZone);
+        updateCardActionMenuQty();
+        break;
+      case 'plus':
+        addCardToZone(cardActionMenuCard, cardActionMenuZone);
+        updateCardActionMenuQty();
+        break;
+      case 'sideboard':
+        moveCard(cardId, cardActionMenuZone, 'sideboard');
+        closeCardActionMenu();
+        break;
+      case 'maybeboard':
+        moveCard(cardId, cardActionMenuZone, 'maybeboard');
+        closeCardActionMenu();
+        break;
+      case 'main':
+        moveCard(cardId, cardActionMenuZone, 'deck');
+        closeCardActionMenu();
+        break;
+      case 'delete':
+        deleteCard(cardId, cardActionMenuZone);
+        closeCardActionMenu();
+        break;
+    }
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!menu.classList.contains('hidden') &&
+        !e.target.closest('.card-action-menu') &&
+        !e.target.closest('.deck-card-menu-btn')) {
+      closeCardActionMenu();
+    }
+  });
+}
+
+function openCardActionMenu(card, zone, buttonEl) {
+  if (window.innerWidth > 768) return;
+
+  cardActionMenuCard = card;
+  cardActionMenuZone = zone;
+
+  const menu = document.getElementById('card-action-menu');
+  if (!menu) return;
+
+  // Position menu near the button
+  const rect = buttonEl.getBoundingClientRect();
+  menu.style.top = `${rect.bottom + 4}px`;
+  menu.style.right = `${window.innerWidth - rect.right}px`;
+  menu.style.left = 'auto';
+
+  // Update quantity display
+  updateCardActionMenuQty();
+
+  // Show/hide move options based on current zone
+  menu.querySelectorAll('[data-menu-action="sideboard"]')[0].style.display =
+    zone === 'sideboard' ? 'none' : '';
+  menu.querySelectorAll('[data-menu-action="maybeboard"]')[0].style.display =
+    zone === 'maybeboard' ? 'none' : '';
+  menu.querySelectorAll('[data-menu-action="main"]')[0].style.display =
+    zone === 'deck' ? 'none' : '';
+
+  menu.classList.remove('hidden');
+}
+
+function closeCardActionMenu() {
+  const menu = document.getElementById('card-action-menu');
+  if (menu) {
+    menu.classList.add('hidden');
+  }
+  cardActionMenuCard = null;
+  cardActionMenuZone = null;
+}
+
+function updateCardActionMenuQty() {
+  const qtyEl = document.getElementById('card-action-menu-qty');
+  if (!qtyEl || !cardActionMenuCard) return;
+
+  const zoneData = cardActionMenuZone === 'deck' ? deckState.deck :
+                   cardActionMenuZone === 'sideboard' ? deckState.sideboard :
+                   deckState.maybeboard;
+  const entry = zoneData.find(c => c.card.id === cardActionMenuCard.id);
+  qtyEl.textContent = entry ? entry.quantity : 0;
+
+  // Close if card was removed
+  if (!entry) {
+    closeCardActionMenu();
+  }
+}
+
+/**
  * Open card preview modal
  */
 function openCardModal(card, zone = 'deck') {
@@ -328,6 +441,9 @@ function renderCurrentZone(deckData) {
       if (window.innerWidth <= 768 && card) {
         openCardModal(card, zone || 'deck');
       }
+    },
+    onMenuOpen: (card, zone, buttonEl) => {
+      openCardActionMenu(card, zone, buttonEl);
     },
     onAdd: (card, zone) => addCardToZone(card, zone || 'deck'),
     onRemove: (cardId, zone, deleteAll) => {
@@ -1303,6 +1419,7 @@ function init() {
   // Setup mobile tab navigation
   setupMobileTabs();
   setupCardModal();
+  setupCardActionMenu();
   setupMobileFilterCollapse();
   window.addEventListener('resize', updateMobileTabContent);
 
