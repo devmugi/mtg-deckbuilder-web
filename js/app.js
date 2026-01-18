@@ -18,6 +18,11 @@ import { fetchCardsBatch } from './scryfall.js';
  */
 let currentPreviewCard = null;
 let currentZone = 'deck';
+let filterState = {
+  colors: ['W', 'U', 'B', 'R', 'G', 'C'],
+  type: '',
+  view: 'list'
+};
 let isLoading = false;
 let loadingIndicator;
 let loadingProgress;
@@ -58,29 +63,55 @@ function switchZone(zone) {
 }
 
 /**
+ * Filter cards based on current filter state
+ * @param {Array} cards - Card entries to filter
+ * @returns {Array} Filtered cards
+ */
+function filterCards(cards) {
+  return cards.filter(({ card }) => {
+    // Color filter
+    const cardColors = card.colors || [];
+    const matchesColor = cardColors.length === 0
+      ? filterState.colors.includes('C')
+      : cardColors.some(c => filterState.colors.includes(c));
+
+    // Type filter
+    const matchesType = !filterState.type ||
+      (card.typeLine && card.typeLine.includes(filterState.type));
+
+    return matchesColor && matchesType;
+  });
+}
+
+/**
  * Render the current zone's cards
  */
 function renderCurrentZone(deckData) {
   const cards = deckData[currentZone] || [];
-  renderDeck(cards, currentZone, {
-    onPreview: handlePreview,
-    onAdd: (card) => addCardToZone(card, currentZone),
-    onRemove: (cardId, deleteAll) => {
-      if (deleteAll) {
-        // Remove all copies by getting the card entry and removing that many
-        const cards = getZone(currentZone);
-        const entry = cards.find(e => e.card.id === cardId);
-        if (entry) {
-          for (let i = 0; i < entry.quantity; i++) {
-            removeCardFromZone(cardId, currentZone);
+  const filteredCards = filterCards(cards);
+
+  if (filterState.view === 'grid') {
+    renderGrid(filteredCards, { onPreview: handlePreview });
+  } else {
+    renderDeck(filteredCards, currentZone, {
+      onPreview: handlePreview,
+      onAdd: (card) => addCardToZone(card, currentZone),
+      onRemove: (cardId, deleteAll) => {
+        if (deleteAll) {
+          const zoneCards = getZone(currentZone);
+          const entry = zoneCards.find(e => e.card.id === cardId);
+          if (entry) {
+            for (let i = 0; i < entry.quantity; i++) {
+              removeCardFromZone(cardId, currentZone);
+            }
           }
+        } else {
+          removeCardFromZone(cardId, currentZone);
         }
-      } else {
-        removeCardFromZone(cardId, currentZone);
-      }
-    },
-    onMove: handleMove
-  });
+      },
+      onMove: handleMove
+    });
+  }
 }
 
 /**
