@@ -90,7 +90,6 @@ export function renderDeck(cards, zone, handlers) {
     const price = card.prices.usd
       ? `$${(parseFloat(card.prices.usd) * quantity).toFixed(2)}`
       : '—';
-    const shortType = getShortType(card.typeLine);
 
     return `
       <div class="deck-card" data-card-id="${card.id}">
@@ -102,7 +101,7 @@ export function renderDeck(cards, zone, handlers) {
         >
         <div class="deck-card-info">
           <div class="deck-card-name">${escapeHtml(card.name)}</div>
-          <div class="deck-card-type">${escapeHtml(shortType)}</div>
+          <div class="deck-card-type">${escapeHtml(card.typeLine || '')}</div>
         </div>
         <div class="deck-card-mana">${renderManaCost(card.manaCost)}</div>
         <div class="deck-card-price">${price}</div>
@@ -474,7 +473,6 @@ function renderSplitCard(card, quantity, zone) {
   const price = card.prices.usd
     ? `$${(parseFloat(card.prices.usd) * quantity).toFixed(2)}`
     : '—';
-  const shortType = getShortType(card.typeLine);
 
   const moveTargets = {
     deck: ['sideboard', 'maybeboard'],
@@ -489,7 +487,7 @@ function renderSplitCard(card, quantity, zone) {
       <img class="deck-card-thumb" src="${card.images.artCrop}" alt="" loading="lazy">
       <div class="deck-card-info">
         <div class="deck-card-name">${escapeHtml(card.name)}</div>
-        <div class="deck-card-type">${escapeHtml(shortType)}</div>
+        <div class="deck-card-type">${escapeHtml(card.typeLine || '')}</div>
       </div>
       <div class="deck-card-mana">${renderManaCost(card.manaCost)}</div>
       <div class="deck-card-price">${price}</div>

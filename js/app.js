@@ -442,39 +442,62 @@ async function loadPreconDeck(deckId) {
   commanderCard = null;
   renderPreview(null);
 
+  // Get all card lists
+  const mainboardNames = precon.cards || [];
+  const sideboardNames = precon.sideboard || [];
+  const maybeboardNames = precon.maybeboard || [];
+  const totalCards = mainboardNames.length + sideboardNames.length + maybeboardNames.length;
+
   // Start loading
   isLoading = true;
   loadingIndicator.classList.remove('hidden');
-  loadingProgress.textContent = `0/${precon.cards.length}`;
+  loadingProgress.textContent = `0/${totalCards}`;
 
-  const cardNames = precon.cards;
-  const totalCards = cardNames.length;
   const batchSize = 10;
   const loadedCards = [];
+  let loadedCount = 0;
 
-  // Load in batches
-  for (let i = 0; i < totalCards; i += batchSize) {
-    // Check if this load was cancelled (new deck selected)
-    if (thisLoadId !== currentLoadId) {
-      return; // Abort this load
+  // Helper to load cards in batches
+  async function loadCardBatches(cardNames, zone) {
+    for (let i = 0; i < cardNames.length; i += batchSize) {
+      if (thisLoadId !== currentLoadId) return null;
+
+      const batch = cardNames.slice(i, i + batchSize);
+      const cards = await fetchCardsBatch(batch);
+
+      if (thisLoadId !== currentLoadId) return null;
+
+      // Add cards to appropriate zone
+      for (const card of cards) {
+        if (zone === 'deck') {
+          loadedCards.push(card);
+        } else {
+          addCardToZone(card, zone);
+        }
+      }
+
+      loadedCount += cards.length;
+      loadingProgress.textContent = `${loadedCount}/${totalCards}`;
+
+      // Update main deck display
+      if (zone === 'deck') {
+        setDeck(loadedCards, deckId);
+      }
     }
+    return true;
+  }
 
-    const batch = cardNames.slice(i, i + batchSize);
-    const cards = await fetchCardsBatch(batch);
+  // Load mainboard
+  if (await loadCardBatches(mainboardNames, 'deck') === null) return;
 
-    // Check again after async operation
-    if (thisLoadId !== currentLoadId) {
-      return; // Abort this load
-    }
+  // Load sideboard
+  if (sideboardNames.length > 0) {
+    if (await loadCardBatches(sideboardNames, 'sideboard') === null) return;
+  }
 
-    loadedCards.push(...cards);
-
-    // Update progress
-    const loaded = Math.min(i + batchSize, totalCards);
-    loadingProgress.textContent = `${loaded}/${totalCards}`;
-
-    // Update deck with all loaded cards so far
-    setDeck(loadedCards, deckId);
+  // Load maybeboard
+  if (maybeboardNames.length > 0) {
+    if (await loadCardBatches(maybeboardNames, 'maybeboard') === null) return;
   }
 
   // Final check before completing
@@ -485,7 +508,15 @@ async function loadPreconDeck(deckId) {
   // Done loading
   isLoading = false;
   loadingIndicator.classList.add('hidden');
-  showToast(`${precon.name} loaded (${loadedCards.length} cards)`);
+
+  const sbCount = sideboardNames.length;
+  const mbCount = maybeboardNames.length;
+  let toastMsg = `${precon.name} loaded (${loadedCards.length} cards`;
+  if (sbCount > 0 || mbCount > 0) {
+    toastMsg += `, SB: ${sbCount}, MB: ${mbCount}`;
+  }
+  toastMsg += ')';
+  showToast(toastMsg);
 
   // Set commander (first card with "Legendary" in type, or first card)
   const commander = loadedCards.find(c =>
