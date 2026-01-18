@@ -75,7 +75,10 @@ function updateMobileTabContent() {
 
   // Reset visibility
   if (mainPanel) mainPanel.style.display = '';
-  if (leftPanel) leftPanel.style.display = '';
+  if (leftPanel) {
+    leftPanel.style.display = '';
+    leftPanel.classList.remove('mobile-visible');
+  }
   if (filterBar) filterBar.style.display = '';
   if (searchContainer) {
     searchContainer.style.display = '';
@@ -100,7 +103,10 @@ function updateMobileTabContent() {
       break;
     case 'stats':
       if (mainPanel) mainPanel.style.display = 'none';
-      if (leftPanel) leftPanel.style.display = 'flex';
+      if (leftPanel) {
+        leftPanel.style.display = 'flex';
+        leftPanel.classList.add('mobile-visible');
+      }
       if (searchContainer) searchContainer.style.display = 'none';
       break;
   }

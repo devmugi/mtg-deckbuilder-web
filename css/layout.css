@@ -677,6 +677,27 @@ body {
     box-shadow: none;
     border: 1px solid var(--border-subtle);
   }
+
+  /* Mobile Stats Tab */
+  .left-panel.mobile-visible {
+    display: flex;
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 56px;
+    border-right: none;
+    z-index: 50;
+  }
+
+  .left-panel.mobile-visible .stats-panel {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .left-panel.mobile-visible .card-preview {
+    display: none;
+  }
 }
 
 /* ==========================================================================
