@@ -537,6 +537,10 @@ function init() {
         loadPreconDeck(e.target.value);
       }
     });
+
+    // Auto-load Najeela deck by default
+    deckSelector.value = 'najeela-warriors';
+    loadPreconDeck('najeela-warriors');
   }
 
   // Clear deck button
