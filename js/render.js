@@ -37,12 +37,13 @@ export function renderPreview(card) {
   const price = card.prices.usd ? `$${card.prices.usd}` : 'N/A';
 
   previewContainer.innerHTML = `
-    <img
-      class="card-preview-image"
-      src="${card.images.normal}"
-      alt="${escapeHtml(card.name)}"
-      loading="lazy"
-    >
+    <div class="card-preview-image-container">
+      <img
+        class="card-preview-image"
+        src="${card.images.normal}"
+        alt="${escapeHtml(card.name)}"
+      >
+    </div>
     <div class="card-preview-info">
       <div class="card-preview-name">${escapeHtml(card.name)}</div>
       <div class="card-preview-type">${escapeHtml(card.typeLine)}</div>

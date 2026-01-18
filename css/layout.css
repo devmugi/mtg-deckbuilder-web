@@ -103,10 +103,20 @@ body {
   gap: var(--space-sm);
 }
 
+.card-preview-image-container {
+  width: 100%;
+  aspect-ratio: 488 / 680;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-mid);
+  background: var(--bg-raised);
+}
+
 .card-preview-image {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-mid);
 }
 
 .card-preview-placeholder {
